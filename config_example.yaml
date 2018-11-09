@@ -1,0 +1,85 @@
+#
+# golang RESTful API framework `goliath' configuration
+# examples
+#
+goliath:
+    #
+    # httpサーバー
+    #   port:     Listenポート
+    #   baseurl:  APIを処理するurl。"/v1/" と定義の場合 https://your.domain.com/vi/ 以下をAPIのURLとして処理します。
+    #   userdb:   ユーザーアカウント作成時に、ユーザーDBの割当を0から順に行います。2を設定した場合は、0または1がユーザーDB番号となります。
+    #   loglevel: 出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です。
+    #   debug:    デバッグ機能を有効にします
+    #   cleardb:  debugがtrueかつ、cleardbがtrueの場合に、実行時にデータベースをクリアします。
+    #
+    server:
+        port:           5050
+        baseurl:        "/v1/"
+        timezone:       "Asia/Tokyo"
+        userdb:         1
+        loglevel:       14
+        debug:          false
+        cleardb:        false
+
+    #
+    # MessageManager
+    #   default:      既定のメッセージコード
+    #   system, user: 多言語対応の固定メッセージ定義ファイルの参照パスを指定します。
+    #                 ユーザー定義の定義ファイルは、system_message.json を参考の上、userにパスを指定してください。
+    #                 定義するメッセージコードは、システムと重複した場合は、ロードされませんのでご注意ください。
+    #
+    message:
+        default:        "ja"
+        system:         "${GOPATH}/src/github.com/shimalab-jp/goliath/system_message.json"
+        user:           ""
+
+    #
+    # memcached
+    # prefix: memcachedのキーに付与するプリフィックス。1つのmemcachedを複数の環境で利用する場合にキーの重複を防ぎます。
+    # expiration: 有効期限(秒)
+    # 参照するmemcachedの接続先を複数指定します。
+    #
+    memcached:
+        prefix:         "goliath:dev"
+        expiration:     3600
+        servers:
+          - host:       "localhost"
+            port:       11211
+
+    #
+    # データベース定義
+    # ※1つは必ず goliath という名前で定義してくささい。
+    # ※goliathと同じ接続先を別名で定義してユーザー領域として利用しても問題ありません。
+    #
+    databases:
+      - name:           "goliath"
+        driver:         "mysql"
+        host:           "1.2.3.4"
+        port:           3306
+        scheme:         "database_name"
+        user:           "user_name"
+        password:       "password"
+
+      - name:           "userdb_example00"
+        driver:         "mysql"
+        host:           "1.2.3.4"
+        port:           3306
+        scheme:         "database_name"
+        user:           "user_name"
+        password:       "password"
+
+      - name:           "userdb_example01"
+        driver:         "mysql"
+        host:           "2.3.4.5"
+        port:           3306
+        scheme:         "database_name"
+        user:           "user_name"
+        password:       "password"
+
+    #
+    # ストアURL
+    # クライアントのバージョンが古い場合に、アップデート要求情報と一緒に、クライアントに渡されます。
+    #
+    storeurl:
+        apple:          "itms://itunes.apple.com/jp/app/app_name/id9999999999?l=ja&ls=1&mt=8"
+        google:         "market://details?id=com.company.app_name"

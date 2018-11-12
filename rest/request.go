@@ -2,34 +2,34 @@ package rest
 
 import (
     "fmt"
-    "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
     "strconv"
     "strings"
 )
 
 type Request struct {
-    BusinessDay   businessDay
-    RemoteAddress string
-    UserAgent     string
-    Languages     []message.AcceptLanguage
-    Url           string
-    NameSpace     string
-    Name          string
-    SubNames      string
-    DisplayName   string
-    Method        string
-    ContentType   string
-    QueryString   string
-    Headers       map[string]string
-    GetData       map[string]string
-    PostData      map[string]interface{}
-    OutputFormat  string
-    Resource      *IRestResource
-    ResourceInfo  *ResourceInfo
-    Session       *Session
-    ParseTime     int64
-    RequestID     string
+    BusinessDay    businessDay
+    RemoteAddress  string
+    UserAgent      string
+    Languages      []message.AcceptLanguage
+    Url            string
+    NameSpace      string
+    Name           string
+    SubNames       string
+    DisplayName    string
+    Method         string
+    ContentType    string
+    QueryString    string
+    Headers        map[string]string
+    GetData        map[string]interface{}
+    PostData       map[string]interface{}
+    OutputFormat   string
+    Resource       *IRestResource
+    ResourceInfo   *ResourceInfo
+    ResourceDefine *ResourceDefine
+    Session        *Session
+    ParseTime      int64
+    RequestID      string
     MessageManager *message.GoliathMessageManager
 }
 
@@ -43,8 +43,6 @@ func (request *Request) GetString(name string, defaultValue string) (string) {
     if value, ok := request.GetData[name]; ok {
         return fmt.Sprint(value)
     }
-
-    log.D(message.SystemMessageManager.Get("DBG_RES_101", name))
 
     return defaultValue
 }

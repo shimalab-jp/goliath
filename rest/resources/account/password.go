@@ -2,6 +2,7 @@ package account
 
 import (
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
 type Password struct {
@@ -18,9 +19,9 @@ func (res Password) Define() (*rest.ResourceInfo) {
                 UrlParameters: map[string]rest.Parameter{},
                 PostParameters: map[string]rest.Parameter{},
                 Returns: map[string]rest.Return{
-                    "account_auth_info": {
-                        Type:        "array",
-                        Description: "アカウント認証情報"}},
+                    "AccountInfo": {
+                        Type:        reflect.Map,
+                        Description: "アカウント情報"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}

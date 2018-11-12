@@ -9,13 +9,15 @@ import (
 )
 
 type ServerConfig struct {
-    Port     uint16
-    BaseUrl  string
-    TimeZone string
-    LogLevel uint32
-    UserDB   int8
-    Debug    bool
-    ClearDB  bool
+    Port      uint16
+    ApiUrl    string
+    TimeZone  string
+    LogLevel  uint32
+    UserDB    int8
+    Debug     bool
+    Reference bool
+    ReferenceUrl string
+    ClearDB   bool
 }
 
 type MessageConfig struct {
@@ -44,7 +46,6 @@ type DatabaseConfig struct {
     User     string
     Password string
 }
-
 
 func (db *DatabaseConfig) ConnectionString() (string) {
     return fmt.Sprintf(

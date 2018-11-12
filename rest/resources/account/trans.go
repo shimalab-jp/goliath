@@ -2,6 +2,7 @@ package account
 
 import (
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
 type Trans struct {
@@ -17,28 +18,28 @@ func (res Trans) Define() (*rest.ResourceInfo) {
                 Description:   "新しい端末にプレイでデータを移譲します。",
                 UrlParameters: map[string]rest.Parameter{},
                 PostParameters: map[string]rest.Parameter{
-                    "player_id": {
-                        Type:        "string",
+                    "PlayerID": {
+                        Type:        reflect.String,
                         Default:     rest.PlatformNone,
-                        Regex:       "/[0-9]{3,3}-[0-9]{3,3}-[0-9]{3,3}/",
+                        Regex:       "/[0-9]{4,4}-[0-9]{4,4}/",
                         Require:     true,
                         Description: "プレイヤーID"},
-                    "password": {
-                        Type:        "string",
+                    "Password": {
+                        Type:        reflect.String,
                         Default:     rest.PlatformNone,
                         Regex:       "/[0-9A-F]{40,40}/",
                         Require:     true,
                         Description: "パスワード。SHA1でハッシュ化した値を指定してください。"},
-                    "platform": {
-                        Type:        "int",
+                    "Platform": {
+                        Type:        reflect.Uint8,
                         Default:     rest.PlatformNone,
                         Select:      []interface{}{rest.PlatformNone, rest.PlatformApple, rest.PlatformGoogle},
                         Require:     true,
                         Description: "プラットフォーム。" + string(rest.PlatformNone) + ":None, " + string(rest.PlatformApple) + ":Apple, " + string(rest.PlatformGoogle) + ":Google"}},
                 Returns: map[string]rest.Return{
-                    "account_auth_info": {
-                        Type:        "array",
-                        Description: "アカウント認証情報"}},
+                    "AccountInfo": {
+                        Type:        reflect.Map,
+                        Description: "アカウント情報"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}

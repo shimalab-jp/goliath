@@ -1,7 +1,7 @@
 package fcm
 
 import (
-    "net/http"
+    "reflect"
 
     "github.com/shimalab-jp/goliath/rest"
 )
@@ -19,38 +19,20 @@ func (res Regist) Define() (*rest.ResourceInfo) {
                 Description:   "プッシュ通知用のデバイストークンを登録または更新します。",
                 UrlParameters: map[string]rest.Parameter{},
                 PostParameters: map[string]rest.Parameter{
-                    "token": {
-                        Type:        "string",
+                    "Token": {
+                        Type:        reflect.String,
                         Default:     "",
                         Require:     false,
                         Description: "FCMのトークン。空文字を渡すと削除されます。"}},
                 Returns: map[string]rest.Return{
-                    "account_auth_info": {
-                        Type:        "array",
-                        Description: "アカウント認証情報"}},
+                    "AccountInfo": {
+                        Type:        reflect.Map,
+                        Description: "アカウント情報"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}
 }
 
-func (res Regist) Get(request *rest.Request, response *rest.Response) (error) {
-    response.StatusCode = http.StatusMethodNotAllowed
-    response.ResultCode = rest.ResultNotImplemented
-    return nil
-}
-
 func (res Regist) Post(request *rest.Request, response *rest.Response) (error) {
-    return nil
-}
-
-func (res Regist) Delete(request *rest.Request, response *rest.Response) (error) {
-    response.StatusCode = http.StatusMethodNotAllowed
-    response.ResultCode = rest.ResultNotImplemented
-    return nil
-}
-
-func (res Regist) Put(request *rest.Request, response *rest.Response) (error) {
-    response.StatusCode = http.StatusMethodNotAllowed
-    response.ResultCode = rest.ResultNotImplemented
     return nil
 }

@@ -2,6 +2,7 @@ package account
 
 import (
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
 type Auth struct {
@@ -18,13 +19,13 @@ func (res Auth) Define() (*rest.ResourceInfo) {
                 UrlParameters: map[string]rest.Parameter{},
                 PostParameters: map[string]rest.Parameter{
                     "Token": {
-                        Type:        "string",
+                        Type:        reflect.String,
                         Description: "アカウントトークン",
                         Regex:       "/[0-9A-F]{53,53}/"}},
                 Returns: map[string]rest.Return{
-                    "accountInfo": {
-                        Type:        "array",
-                        Description: "アカウント認証情報"}},
+                    "AccountInfo": {
+                        Type:        reflect.Map,
+                        Description: "アカウント情報"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}

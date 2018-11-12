@@ -2,6 +2,7 @@ package account
 
 import (
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
 type Regist struct {
@@ -18,14 +19,14 @@ func (res Regist) Define() (*rest.ResourceInfo) {
                 UrlParameters: map[string]rest.Parameter{},
                 PostParameters: map[string]rest.Parameter{
                     "Platform": {
-                        Type:        "int",
+                        Type:        reflect.Uint8,
                         Default:     rest.PlatformNone,
                         Select:      []interface{}{rest.PlatformNone, rest.PlatformApple, rest.PlatformGoogle},
                         Require:     true,
                         Description: "プラットフォーム。" + string(rest.PlatformNone) + ":None, " + string(rest.PlatformApple) + ":Apple, " + string(rest.PlatformGoogle) + ":Google"}},
                 Returns: map[string]rest.Return{
-                    "accountInfo": {
-                        Type:        "map",
+                    "AccountInfo": {
+                        Type:        reflect.Map,
                         Description: "アカウント情報"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,

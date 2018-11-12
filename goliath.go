@@ -2,6 +2,7 @@ package goliath
 
 import (
     "fmt"
+    "github.com/shimalab-jp/goliath/rest/resources"
     "net/http"
     "strings"
 
@@ -22,6 +23,10 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func referenceHandler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "hello")
+}
+
 func AppendResource(resource rest.IRestResource) (error) {
     return rest.GetEngine().AppendResource(&resource)
 }
@@ -31,7 +36,22 @@ func SetHooks(hooks rest.ExecutionHooks) {
 }
 
 func Listen() (error) {
-    listenUrl := strings.TrimRight(config.Values.Server.BaseUrl, "/") + "/"
-    http.HandleFunc(listenUrl, requestHandler)
+    // API用のハンドラを追加
+    apiUrl := strings.TrimRight(config.Values.Server.ApiUrl, "/") + "/"
+    http.HandleFunc(apiUrl, requestHandler)
+
+    // リファレンス用
+    if config.Values.Server.Reference {
+        // リファレンス用のリソースを追加
+        ref := resources.Reference{}
+        ref.Resources = rest.GetEngine().GetResourceManager().GetAllResources()
+        AppendResource(&ref)
+
+        // リファレンス用のハンドラを追加
+        referenceUrl := strings.TrimRight(config.Values.Server.ReferenceUrl, "/") + "/"
+        http.HandleFunc(referenceUrl, referenceHandler)
+    }
+
+    // httpサーバーを起動
     return http.ListenAndServe(fmt.Sprintf(":%d", config.Values.Server.Port), nil)
 }

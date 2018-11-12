@@ -8,6 +8,8 @@ import (
     "io/ioutil"
     "net/http"
     "path"
+    "reflect"
+    "regexp"
     "strconv"
     "strings"
     "time"
@@ -85,7 +87,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     returnValue := &Request{
         Languages:    []message.AcceptLanguage{},
         Headers:      map[string]string{},
-        GetData:      map[string]string{},
+        GetData:      map[string]interface{}{},
         PostData:     map[string]interface{}{},
         Resource:     nil,
         ResourceInfo: nil,
@@ -126,7 +128,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     */
 
     // リソース名を取得
-    removeUrl := strings.TrimRight(config.Values.Server.BaseUrl, "/") + "/"
+    removeUrl := strings.TrimRight(config.Values.Server.ApiUrl, "/") + "/"
     apiPath := strings.TrimPrefix(httpRequest.URL.Path, removeUrl)
     returnValue.Name = strings.ToLower("/" + strings.TrimLeft(strings.TrimSuffix(apiPath, path.Ext(httpRequest.URL.Path)), "/"))
 
@@ -145,9 +147,6 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
             returnValue.GetData[key] = value[0]
         }
     }
-
-    // Content-Typeを取得
-    returnValue.ContentType = strings.ToLower(httpRequest.Header.Get("Content-Type"))
 
     // POSTデータをパース
     if strings.ToLower(returnValue.Method) == "post" {
@@ -180,12 +179,14 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
 }
 
 func (e *Engine) checkMethod(request *Request, response *Response) (bool) {
-    if _, ok := request.ResourceInfo.Methods[request.Method]; !ok {
+    if v, ok := request.ResourceInfo.Methods[request.Method]; !ok {
         response.StatusCode = http.StatusMethodNotAllowed
         response.ResultCode = ResultNotImplemented
         return false
+    } else {
+        request.ResourceDefine = &v
+        return true
     }
-    return true
 }
 
 func (e *Engine) checkSession(request *Request, response *Response) (bool) {
@@ -245,7 +246,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
         return false
     }
 
-    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", request.Name)
+    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", request.ResourceInfo.Path)
     if err != nil {
         response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_102", err)
         return false
@@ -262,10 +263,10 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
     if enable == 1 {
         return true
     } else if enable == 0 {
-        response.SetErrorMessage("ERR_CMN_102")
+        response.SetErrorMessage("ERR_RES_111")
         return false
     } else {
-        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", request.Name, 1, 1)
+        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", request.ResourceInfo.Path, 1, 1)
         if err != nil {
             response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
             return false
@@ -315,30 +316,216 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
     }
 
     if response.MaintenanceInfo.StartTime <= now && now <= response.MaintenanceInfo.EndTime {
-        response.SetErrorMessage("ERR_CMN_103")
+        response.SetErrorMessage("ERR_RES_112")
         return false
     }
     return true
 }
 
 func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
-    if v, ok := request.ResourceInfo.Methods[request.Method]; ok {
-        if v.IsDebugModeOnly && !config.Values.Server.Debug {
-            response.SetErrorMessage("ERR_CMN_102")
-            return false
-        }
+    if request.ResourceDefine.IsDebugModeOnly && !config.Values.Server.Debug {
+        response.SetErrorMessage("ERR_RES_111")
+        return false
     }
     return true
 }
 
 func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
-    if v, ok := request.ResourceInfo.Methods[request.Method]; ok {
-        if v.IsAdminModeOnly && request.Session != nil && !request.Session.Account.isAdmin {
-            response.SetErrorMessage("ERR_CMN_102")
-            return false
-        }
+    if request.ResourceDefine.IsAdminModeOnly && request.Session != nil && !request.Session.Account.isAdmin {
+        response.SetErrorMessage("ERR_RES_111")
+        return false
     }
     return true
+}
+
+func (e *Engine) checkParameters(request *Request, response *Response, defines *map[string]Parameter, params *map[string]interface{}) (bool) {
+    if len(*defines) <= 0 { return true }
+
+    var result = true
+    for name, def := range *defines {
+        // 無視パラメータチェック
+        if name == "RequestID" { continue }
+
+        // 必須パラメータチェック
+        if result {
+            if def.Require {
+                if _, ok := (*params)[name]; !ok {
+                    response.SetErrorMessage("ERR_RES_101", name)
+                    result = false
+                }
+            } else {
+                if _, ok := (*params)[name]; !ok {
+                    continue
+                }
+            }
+        }
+
+        // 値を文字列に変換
+        strVal := fmt.Sprintf("%+v", (*params)[name])
+
+        // 型チェック(全て)
+        if result {
+            switch def.Type {
+            case reflect.Bool:
+                if _, err := strconv.ParseBool(strVal); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Bool")
+                }
+                break
+            case reflect.Int8:
+                if _, err := strconv.ParseInt(strVal, 10, 8); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Int8")
+                }
+                break
+            case reflect.Int16:
+                if _, err := strconv.ParseInt(strVal, 10, 16); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Int16")
+                }
+                break
+            case reflect.Int32:
+                if _, err := strconv.ParseInt(strVal, 10, 32); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Int32")
+                }
+                break
+            case reflect.Int64:
+            case reflect.Int:
+                if _, err := strconv.ParseInt(strVal, 10, 64); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Int64")
+                }
+                break
+            case reflect.Uint8:
+                if _, err := strconv.ParseUint(strVal, 10, 8); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Uint8")
+                }
+                break
+            case reflect.Uint16:
+                if _, err := strconv.ParseUint(strVal, 10, 16); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Uint16")
+                }
+                break
+            case reflect.Uint32:
+                if _, err := strconv.ParseUint(strVal, 10, 32); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Uint32")
+                }
+                break
+            case reflect.Uint64:
+            case reflect.Uint:
+                if _, err := strconv.ParseUint(strVal, 10, 64); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Uint64")
+                }
+                break
+            case reflect.Float32:
+                if _, err := strconv.ParseFloat(strVal, 32); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Float32")
+                }
+                break
+            case reflect.Float64:
+                if _, err := strconv.ParseFloat(strVal, 64); err != nil {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_102", name, "Float64")
+                }
+                break
+            default:
+                break
+            }
+        }
+
+        // 範囲チェック(数値のみ)
+        if result && len(def.Range) >= 2 {
+            switch def.Type {
+            case reflect.Int8:
+            case reflect.Int16:
+            case reflect.Int32:
+            case reflect.Int64:
+            case reflect.Int:
+                if v, err := strconv.ParseInt(strVal, 10, 64); err == nil {
+                    if !(int64(def.Range[0]) <= v && v <= int64(def.Range[1])) {
+                        result = false
+                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
+                    }
+                }
+                break
+            case reflect.Uint8:
+            case reflect.Uint16:
+            case reflect.Uint32:
+            case reflect.Uint64:
+            case reflect.Uint:
+                if v, err := strconv.ParseUint(strVal, 10, 64); err == nil {
+                    if !(uint64(def.Range[0]) <= v && v <= uint64(def.Range[1])) {
+                        result = false
+                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
+                    }
+                }
+                break
+            case reflect.Float32:
+            case reflect.Float64:
+                if v, err := strconv.ParseFloat(strVal, 64); err == nil {
+                    if !(def.Range[0] <= v && v <= def.Range[1]) {
+                        result = false
+                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
+                    }
+                }
+                break
+            }
+        }
+
+        // 選択チェック(数値、文字列)
+        if result && len(def.Select) >= 1 {
+            switch def.Type {
+            case reflect.Int8:
+            case reflect.Int16:
+            case reflect.Int32:
+            case reflect.Int64:
+            case reflect.Int:
+            case reflect.Uint8:
+            case reflect.Uint16:
+            case reflect.Uint32:
+            case reflect.Uint64:
+            case reflect.Uint:
+            case reflect.Float32:
+            case reflect.Float64:
+            case reflect.String:
+                hit := false
+                search := ""
+                for _, val := range def.Select {
+                    selVal := fmt.Sprintf("%+v", val)
+                    if len(search) > 0 {
+                        search = fmt.Sprintf("%s, %s", search, selVal)
+                    } else {
+                        search = selVal
+                    }
+                    if strVal == selVal {
+                        hit = true
+                        break
+                    }
+                }
+                if !hit {
+                    result = false
+                    response.SetErrorMessage("ERR_RES_104", name, search)
+                }
+                break
+            }
+        }
+
+        // 正規表現チェック(文字列のみ)
+        if result && len(def.Regex) > 0 && def.Type == reflect.String {
+            r := regexp.MustCompile(def.Regex)
+            result = r.MatchString(strVal)
+            if !result {
+                response.SetErrorMessage("ERR_RES_105", name)
+            }
+        }
+    }
+    return result
 }
 
 func (e *Engine) updateLastAccess(request *Request, response *Response) {
@@ -453,6 +640,10 @@ func (e *Engine) SetHooks(hooks *ExecutionHooks) {
     }
 }
 
+func (e *Engine) GetResourceManager() (*resourceManager) {
+    return e.resourceManager
+}
+
 func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) (error) {
     startTime := time.Now().UnixNano()
 
@@ -481,7 +672,6 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
             response.StatusCode = http.StatusNotFound
             response.ResultCode = ResultNotFound
         } else {
-            response.MessageManager = request.MessageManager
             response.Times["T120_PARSE_REQUEST"] = request.ParseTime
         }
     }
@@ -490,6 +680,8 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
         response.Name = request.Name
+        response.ContentType = request.ContentType
+        response.MessageManager = request.MessageManager
         response.RemoteAddress = request.RemoteAddress
         response.OutputFormat = request.OutputFormat
         response.Times["T201_COPY_REQUEST_TO_RESPONSE"] = time.Now().UnixNano() - st
@@ -550,15 +742,17 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
         response.Times["T242_CHECK_ADMIN_ONLY"] = time.Now().UnixNano() - st
     }
 
-    // TODO: URLパラメータチェック
+    // URLパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
+        e.checkParameters(request, response, &request.ResourceDefine.UrlParameters, &request.GetData)
         response.Times["T251_CHECK_URL_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
-    // TODO: POSTパラメータチェック
+    // POSTパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
+        e.checkParameters(request, response, &request.ResourceDefine.PostParameters, &request.PostData)
         response.Times["T252_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
@@ -640,7 +834,9 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
             response.ContentLength = int64(len(*jsonData))
 
             // 出力
-            writer.Header().Set("Content-Type", response.ContentType)
+            if response.OutputFormat == "json" {
+                writer.Header().Set("Content-Type", "application/json; charset=UTF-8")
+            }
             writer.Header().Set("Content-Length", strconv.FormatInt(response.ContentLength, 10))
             writer.WriteHeader(response.StatusCode)
             writer.Write(*jsonData)

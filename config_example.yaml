@@ -5,28 +5,33 @@
 goliath:
     #
     # httpサーバー
-    #   port:     Listenポート
-    #   baseurl:  APIを処理するurl。"/v1/" と定義の場合 https://your.domain.com/vi/ 以下をAPIのURLとして処理します。
-    #   userdb:   ユーザーアカウント作成時に、ユーザーDBの割当を0から順に行います。2を設定した場合は、0または1がユーザーDB番号となります。
-    #   loglevel: 出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です。
-    #   debug:    デバッグ機能を有効にします
-    #   cleardb:  debugがtrueかつ、cleardbがtrueの場合に、実行時にデータベースをクリアします。
+    #   port:         Listenポート
+    #   apiurl:       APIを処理するURL。"/v1/" と定義の場合 https://your.domain.com/v1/ 以下をAPIのURLとして処理します。
+    #   timezone:     使用するタイムゾーンを設定します。time.LoadLocation でロード可能な文字列を指定してください。
+    #   userdb:       ユーザーアカウントを分散させるデータベース数を指定します。3を指定した場合は、3つのデータベースで分散させる事になります。
+    #   loglevel:     出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です。
+    #   debug:        デバッグAPI機能を有効にします
+    #   reference:    リファレンス機能を有効にします。
+    #   referenceurl: リファレンスURL。
+    #   cleardb:      debugがtrueかつ、cleardbがtrueの場合に、起動時にgoliathで使用するシステムテーブルをdropします。
     #
     server:
         port:           5050
-        baseurl:        "/v1/"
+        apiurl:         "/v1/"
         timezone:       "Asia/Tokyo"
         userdb:         1
         loglevel:       14
         debug:          false
+        reference:      true
+        referenceurl:   "/reference/"
         cleardb:        false
 
     #
     # MessageManager
-    #   default:      既定のメッセージコード
+    #   default:      既定の言語。ja, en等の2文字の言語コードを小文字で指定してください。
     #   system, user: 多言語対応の固定メッセージ定義ファイルの参照パスを指定します。
-    #                 ユーザー定義の定義ファイルは、system_message.json を参考の上、userにパスを指定してください。
-    #                 定義するメッセージコードは、システムと重複した場合は、ロードされませんのでご注意ください。
+    #                 ユーザー定義の定義ファイルは、system_message.json を参考の上作成し、userにパスを指定してください。
+    #                 定義するメッセージコードがシステムと重複した場合はシステムが優先されます。
     #
     message:
         default:        "ja"
@@ -35,9 +40,9 @@ goliath:
 
     #
     # memcached
-    # prefix: memcachedのキーに付与するプリフィックス。1つのmemcachedを複数の環境で利用する場合にキーの重複を防ぎます。
+    # prefix:     memcachedのキーに付与するプリフィックス。1つのmemcachedを複数の環境で利用する場合にキーの重複を防ぎます。
     # expiration: 有効期限(秒)
-    # 参照するmemcachedの接続先を複数指定します。
+    # servers:    参照するmemcachedの接続先を配列で指定します。
     #
     memcached:
         prefix:         "goliath:dev"
@@ -49,7 +54,7 @@ goliath:
     #
     # データベース定義
     # ※1つは必ず goliath という名前で定義してくささい。
-    # ※goliathと同じ接続先を別名で定義してユーザー領域として利用しても問題ありません。
+    # ※goliathと同じ接続先を別名で定義してユーザー領域として利用しても、テーブル名が重ならなければ問題ありません。
     #
     databases:
       - name:           "goliath"

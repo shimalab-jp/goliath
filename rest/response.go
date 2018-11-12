@@ -21,7 +21,7 @@ type Response struct {
     Name              string
     RemoteAddress     string
     ResultCode        int32
-    Result            interface{}
+    Result            map[string]interface{}
     Notify            interface{}
     StateData         interface{}
     ErrorCode         string
@@ -45,7 +45,7 @@ type OutputData struct {
     Method          string
     ApiName         string
     ResultCode      int32
-    Result          interface{}
+    Result          map[string]interface{}
     ErrorCode       string
     ErrorMessage    string
     DebugMessage    string

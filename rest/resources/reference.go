@@ -2,10 +2,12 @@ package resources
 
 import (
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
 type Reference struct {
     rest.ResourceBase
+    Resources *map[string]*rest.IRestResource
 }
 
 func (res Reference) Define() (*rest.ResourceInfo) {
@@ -19,7 +21,7 @@ func (res Reference) Define() (*rest.ResourceInfo) {
                 PostParameters: map[string]rest.Parameter{},
                 Returns: map[string]rest.Return{
                     "Resources": {
-                        Type:        "array",
+                        Type:        reflect.Map,
                         Description: "リファレンスデータ"}},
                 RequireAuthentication: false,
                 IsDebugModeOnly:       false,
@@ -27,5 +29,12 @@ func (res Reference) Define() (*rest.ResourceInfo) {
 }
 
 func (res Reference) Get(request *rest.Request, response *rest.Response) (error) {
+    ret := map[string]rest.ResourceInfo{}
+    for i, v := range *res.Resources {
+        if v != nil && *v != nil {
+            ret[i] = *(*v).Define()
+        }
+    }
+    response.Result = map[string]interface{}{ "Resources": ret }
     return nil
 }

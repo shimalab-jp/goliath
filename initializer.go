@@ -6,7 +6,6 @@ import (
     "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
     "github.com/shimalab-jp/goliath/rest"
-    "github.com/shimalab-jp/goliath/rest/resources"
     "github.com/shimalab-jp/goliath/rest/resources/account"
     "github.com/shimalab-jp/goliath/rest/resources/debug"
     "github.com/shimalab-jp/goliath/rest/resources/fcm"
@@ -109,7 +108,7 @@ func initDatabase() (error) {
         if err == nil {
             log.I("[INITDB] CREATE `goliath_mst_version` table.")
             _, err = con.Execute(
-                "INSERT INTO `goliath_mst_version` (`version_num`, `version`) VALUES (?, ?);",
+                "REPLACE INTO `goliath_mst_version` (`version_num`, `version`) VALUES (?, ?);",
                 DataVersionNum, DataVersion)
             if err == nil {
                 log.I("[INITDB] INSERT version data.")
@@ -280,7 +279,6 @@ func appendBasicResources() (error) {
     if err == nil { err = AppendResource(&account.Trans{}) }
     if err == nil { err = AppendResource(&fcm.Regist{}) }
     if err == nil { err = AppendResource(&debug.Cache{}) }
-    if err == nil { err = AppendResource(&resources.Reference{}) }
 
     return err
 }

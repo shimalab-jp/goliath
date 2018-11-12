@@ -4,6 +4,7 @@ import (
     "fmt"
     "github.com/pkg/errors"
     "net/http"
+    "reflect"
     "strings"
     "sync"
 
@@ -11,17 +12,17 @@ import (
 )
 
 type Parameter struct {
-    Type string
+    Type        reflect.Kind
     Description string
-    Range []int64
-    Select []interface{}
-    Regex string
-    Default interface{}
-    Require bool
+    Range       []float64
+    Select      []interface{}
+    Regex       string
+    Default     interface{}
+    Require     bool
 }
 
 type Return struct {
-    Type string
+    Type        reflect.Kind
     Description string
 }
 
@@ -50,10 +51,10 @@ type IRestResource interface {
     Put(request *Request, response *Response) (error)
 }
 
-type ResourceBase struct {}
+type ResourceBase struct{}
 
 func (res *ResourceBase) Define() (*ResourceInfo) {
-    return &ResourceInfo{ Methods: map[string]ResourceDefine{} }
+    return &ResourceInfo{Methods: map[string]ResourceDefine{}}
 }
 
 func (res *ResourceBase) Get(request *Request, response *Response) (error) {
@@ -80,19 +81,15 @@ func (res *ResourceBase) Put(request *Request, response *Response) (error) {
     return nil
 }
 
-
-
-
-
 type resourceManager struct {
     resourceMutex *sync.Mutex
-    resources *map[string]*IRestResource
+    resources     *map[string]*IRestResource
 }
 
 func createResourceManager() (*resourceManager) {
     return &resourceManager{
         resourceMutex: &sync.Mutex{},
-        resources: &map[string]*IRestResource{}}
+        resources:     &map[string]*IRestResource{}}
 }
 
 func (resManager *resourceManager) initialize() {
@@ -137,4 +134,8 @@ func (resManager *resourceManager) Append(resource *IRestResource) (error) {
     }
 
     return err
+}
+
+func (resManager *resourceManager) GetAllResources() (*map[string]*IRestResource) {
+    return resManager.resources
 }

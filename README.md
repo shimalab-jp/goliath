@@ -1,4 +1,4 @@
-# 'goliath' ゴリアテ
+# goliath - RESTful API framework for golang
 
 はじめに
 ------
@@ -29,7 +29,7 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 
 
 開発環境
----------
+------
 
 * macOS 10.14, Ubuntu 18.04 LTS
 * golang 1.11

@@ -14,8 +14,12 @@ type VersionConfig struct {
 }
 
 type ReferenceConfig struct {
-    Enable bool
-    Url    string
+    Enable      bool
+    Url         string
+    Environment string
+    Name        string
+    Logo        string
+    UserAgent   string
 }
 
 type DebugConfig struct {

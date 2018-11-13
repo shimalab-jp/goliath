@@ -2,6 +2,7 @@ package rest
 
 import (
     "fmt"
+    "github.com/shimalab-jp/goliath/util"
     "sort"
     "strings"
 
@@ -49,26 +50,7 @@ func (cv *ClientVersion) GetVersion() (string) {
 }
 
 func (cv *ClientVersion) GetEnvironmentCode() (uint32) {
-    e := strings.ToLower(cv.environment)
-    if e == "dem" || e == "demo" {
-        return EnvironmentDemo
-    } else if e == "dev" || e == "develop" || e == "development" {
-        return EnvironmentDevelop1
-    } else if e == "dev1" || e == "develop1" || e == "development1" {
-        return EnvironmentDevelop1
-    } else if e == "dev2" || e == "develop2" || e == "development2" {
-        return EnvironmentDevelop2
-    } else if e == "tst" || e == "test" {
-        return EnvironmentTest
-    } else if e == "stg" || e == "staging" {
-        return EnvironmentStaging
-    } else if e == "apl" || e == "app" || e == "apple" {
-        return EnvironmentAppleReview
-    } else if e == "prd" || e == "prod" || e == "product" || e == "production" || e == "live" {
-        return EnvironmentProduction
-    } else {
-        return EnvironmentLocal
-    }
+    return util.ToEnvironmentCode(cv.environment)
 }
 
 func (cv *ClientVersion) GetPlatform() (uint32) {

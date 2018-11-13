@@ -24,13 +24,4 @@ const (
     PlatformNone   = 0
     PlatformApple  = 1
     PlatformGoogle = 2
-
-    EnvironmentLocal       = 9
-    EnvironmentDemo        = 8
-    EnvironmentDevelop1    = 6
-    EnvironmentDevelop2    = 5
-    EnvironmentTest        = 4
-    EnvironmentStaging     = 3
-    EnvironmentAppleReview = 2
-    EnvironmentProduction  = 1
 )

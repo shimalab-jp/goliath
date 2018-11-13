@@ -3,7 +3,12 @@ package goliath
 import (
     "fmt"
     "github.com/shimalab-jp/goliath/rest/resources"
+    "github.com/shimalab-jp/goliath/util"
+    "io/ioutil"
+    "mime"
     "net/http"
+    "os"
+    "path"
     "strings"
 
     "github.com/shimalab-jp/goliath/config"
@@ -24,7 +29,25 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func referenceHandler(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "hello")
+    accessPath := r.URL.Path[len(config.Values.Server.Reference.Url):]
+    if len(accessPath) <= 0 {
+        accessPath = "index.html"
+    }
+    vPath := fmt.Sprintf("${GOPATH}/src/github.com/shimalab-jp/goliath/reference/%s", accessPath)
+    realPath := os.ExpandEnv(vPath)
+
+    if util.FileExists(realPath) {
+        buffer, err := ioutil.ReadFile(realPath)
+        if err != nil {
+            w.WriteHeader(http.StatusForbidden)
+        } else {
+            mimeType := mime.TypeByExtension(path.Ext(realPath))
+            w.Header().Set("Content-Type", mimeType)
+            w.Write(buffer)
+        }
+    } else {
+        w.WriteHeader(http.StatusNotFound)
+    }
 }
 
 func AppendResource(resource rest.IRestResource) (error) {
@@ -50,6 +73,8 @@ func Listen() (error) {
         AppendResource(&ref)
 
         // リファレンス用のハンドラを追加
+
+
         referenceUrl := strings.TrimRight(config.Values.Server.Reference.Url, "/") + "/"
         http.HandleFunc(referenceUrl, referenceHandler)
     }

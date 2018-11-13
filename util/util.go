@@ -4,7 +4,19 @@ import (
     "fmt"
     "math/rand"
     "os"
+    "strings"
     "time"
+)
+
+const (
+    EnvironmentLocal       = 9
+    EnvironmentDemo        = 8
+    EnvironmentDevelop1    = 6
+    EnvironmentDevelop2    = 5
+    EnvironmentTest        = 4
+    EnvironmentStaging     = 3
+    EnvironmentAppleReview = 2
+    EnvironmentProduction  = 1
 )
 
 func GenerateUuid() (string) {
@@ -37,4 +49,27 @@ func FileExists(path string) (bool) {
 func DirectoryExists(path string) (bool) {
     file, err := os.Stat(path)
     return err == nil && file.IsDir()
+}
+
+func ToEnvironmentCode(name string) (uint32) {
+    e := strings.ToLower(name)
+    if e == "dem" || e == "demo" {
+        return EnvironmentDemo
+    } else if e == "dev" || e == "develop" || e == "development" {
+        return EnvironmentDevelop1
+    } else if e == "dev1" || e == "develop1" || e == "development1" {
+        return EnvironmentDevelop1
+    } else if e == "dev2" || e == "develop2" || e == "development2" {
+        return EnvironmentDevelop2
+    } else if e == "tst" || e == "test" {
+        return EnvironmentTest
+    } else if e == "stg" || e == "staging" {
+        return EnvironmentStaging
+    } else if e == "apl" || e == "app" || e == "apple" {
+        return EnvironmentAppleReview
+    } else if e == "prd" || e == "prod" || e == "product" || e == "production" || e == "live" {
+        return EnvironmentProduction
+    } else {
+        return EnvironmentLocal
+    }
 }

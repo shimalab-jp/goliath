@@ -8,6 +8,8 @@ import (
 )
 
 type Request struct {
+    Version        uint32
+    BaseUrl        string
     BusinessDay    businessDay
     RemoteAddress  string
     UserAgent      string
@@ -25,7 +27,7 @@ type Request struct {
     PostData       map[string]interface{}
     OutputFormat   string
     Resource       *IRestResource
-    ResourceInfo   *ResourceInfo
+    MethodInfo     *ResourceMethodDefine
     ResourceDefine *ResourceDefine
     Session        *Session
     ParseTime      int64

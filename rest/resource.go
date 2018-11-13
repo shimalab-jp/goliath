@@ -11,6 +11,11 @@ import (
     "github.com/shimalab-jp/goliath/log"
 )
 
+type Return struct {
+    Type        reflect.Kind
+    Description string
+}
+
 type Parameter struct {
     Type        reflect.Kind
     Description string
@@ -21,12 +26,7 @@ type Parameter struct {
     Require     bool
 }
 
-type Return struct {
-    Type        reflect.Kind
-    Description string
-}
-
-type ResourceDefine struct {
+type ResourceMethodDefine struct {
     Summary               string
     Description           string
     UrlParameters         map[string]Parameter
@@ -38,13 +38,13 @@ type ResourceDefine struct {
     RunInMaintenance      bool
 }
 
-type ResourceInfo struct {
-    Path    string
-    Methods map[string]ResourceDefine
+type ResourceDefine struct {
+    Path     string
+    Methods  map[string]ResourceMethodDefine
 }
 
 type IRestResource interface {
-    Define() (*ResourceInfo)
+    Define() (*ResourceDefine)
     Get(request *Request, response *Response) (error)
     Post(request *Request, response *Response) (error)
     Delete(request *Request, response *Response) (error)
@@ -53,8 +53,8 @@ type IRestResource interface {
 
 type ResourceBase struct{}
 
-func (res *ResourceBase) Define() (*ResourceInfo) {
-    return &ResourceInfo{Methods: map[string]ResourceDefine{}}
+func (res *ResourceBase) Define() (*ResourceDefine) {
+    return &ResourceDefine{ Methods: map[string]ResourceMethodDefine{} }
 }
 
 func (res *ResourceBase) Get(request *Request, response *Response) (error) {

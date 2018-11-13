@@ -9,10 +9,10 @@ type Auth struct {
     rest.ResourceBase
 }
 
-func (res Auth) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Auth) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/account/auth",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "アカウント認証",
                 Description:   "アカウントトークンでアカウントを認証します。",
@@ -44,9 +44,9 @@ func (res Auth) Post(request *rest.Request, response *rest.Response) (error) {
 
     // アカウント取得チェック
     if account == nil {
-        response.SetErrorMessage("ERR_ACC_111")
+        response.SetErrorMessage("ERR_RES_122")
     } else if account.IsBan {
-        response.SetErrorMessage("ERR_ACC_102")
+        response.SetErrorMessage("ERR_RES_121")
     }
 
     // セッションに登録

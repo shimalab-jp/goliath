@@ -8,10 +8,10 @@ type Cache struct {
     rest.ResourceBase
 }
 
-func (res Cache) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Cache) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/debug/cache",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "DELETE": {
                 Summary:               "キャッシュクリア",
                 Description:           "memcached及び内部キャッシュの全ての値をクリアします。",

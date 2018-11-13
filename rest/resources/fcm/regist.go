@@ -10,10 +10,10 @@ type Regist struct {
     rest.ResourceBase
 }
 
-func (res Regist) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Regist) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/fcm/regist",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "FCMトークン登録／更新",
                 Description:   "プッシュ通知用のデバイストークンを登録または更新します。",

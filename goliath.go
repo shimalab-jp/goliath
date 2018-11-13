@@ -37,18 +37,20 @@ func SetHooks(hooks rest.ExecutionHooks) {
 
 func Listen() (error) {
     // API用のハンドラを追加
-    apiUrl := strings.TrimRight(config.Values.Server.ApiUrl, "/") + "/"
-    http.HandleFunc(apiUrl, requestHandler)
+    for _, v := range config.Values.Server.Versions {
+        apiUrl := strings.TrimRight(v.Url, "/") + "/"
+        http.HandleFunc(apiUrl, requestHandler)
+    }
 
     // リファレンス用
-    if config.Values.Server.Reference {
+    if config.Values.Server.Reference.Enable {
         // リファレンス用のリソースを追加
         ref := resources.Reference{}
         ref.Resources = rest.GetEngine().GetResourceManager().GetAllResources()
         AppendResource(&ref)
 
         // リファレンス用のハンドラを追加
-        referenceUrl := strings.TrimRight(config.Values.Server.ReferenceUrl, "/") + "/"
+        referenceUrl := strings.TrimRight(config.Values.Server.Reference.Url, "/") + "/"
         http.HandleFunc(referenceUrl, referenceHandler)
     }
 

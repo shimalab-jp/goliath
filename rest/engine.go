@@ -25,10 +25,11 @@ type ExecutionHooks interface {
 }
 
 type Engine struct {
-    initialized     bool
-    hooks           *ExecutionHooks
-    resourceManager *resourceManager
-    sessionManager  *sessionManager
+    initialized      bool
+    hooks            *ExecutionHooks
+    resourceManager  *resourceManager
+    sessionManager   *sessionManager
+    userAgentPattern *regexp.Regexp
 }
 
 var instance *Engine = nil
@@ -38,9 +39,10 @@ func InitializeEngine() {
     if instance == nil {
         // エンジンのインスタンスを作成
         instance = &Engine{
-            resourceManager: createResourceManager(),
-            sessionManager:  createSessionManager(),
-            initialized:     true}
+            resourceManager:  createResourceManager(),
+            sessionManager:   createSessionManager(),
+            userAgentPattern: regexp.MustCompile(config.Values.Client.UserAgentPattern),
+            initialized:      true}
     }
 }
 
@@ -90,8 +92,23 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
         GetData:      map[string]interface{}{},
         PostData:     map[string]interface{}{},
         Resource:     nil,
-        ResourceInfo: nil,
+        MethodInfo:   nil,
         Session:      nil}
+
+    // バージョン判定
+    for _, v := range config.Values.Server.Versions {
+        leftVal := strings.ToLower(strings.TrimRight(v.Url, "/") + "/")
+        if len(leftVal) > len(httpRequest.URL.Path) {
+            continue
+        }
+
+        checkVal := strings.ToLower(httpRequest.URL.Path[0:len(leftVal)])
+        if checkVal == leftVal {
+            returnValue.Version = v.Version
+            returnValue.BaseUrl = v.Url
+            break
+        }
+    }
 
     // 営業日を取得
     returnValue.BusinessDay = GetBusinessDay(time.Now().Unix())
@@ -128,7 +145,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     */
 
     // リソース名を取得
-    removeUrl := strings.TrimRight(config.Values.Server.ApiUrl, "/") + "/"
+    removeUrl := strings.TrimRight(returnValue.BaseUrl, "/") + "/"
     apiPath := strings.TrimPrefix(httpRequest.URL.Path, removeUrl)
     returnValue.Name = strings.ToLower("/" + strings.TrimLeft(strings.TrimSuffix(apiPath, path.Ext(httpRequest.URL.Path)), "/"))
 
@@ -170,7 +187,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     }
 
     // RESTリソースの定義情報を取得
-    returnValue.ResourceInfo = (*returnValue.Resource).Define()
+    returnValue.ResourceDefine = (*returnValue.Resource).Define()
 
     // 解析時間を記録
     returnValue.ParseTime = time.Now().UnixNano() - startTime
@@ -178,13 +195,88 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     return returnValue, nil
 }
 
+func (e *Engine) parseUserAgent(userAgent string) (*ClientVersion) {
+    result := e.userAgentPattern.FindAllStringSubmatch(userAgent, -1)
+    if len(result) > 0 && len(result[0]) == 6 {
+        major, err := strconv.ParseUint(result[0][1], 10, 32)
+        if err != nil {
+            return nil
+        }
+
+        minor, err := strconv.ParseUint(result[0][2], 10, 32)
+        if err != nil {
+            return nil
+        }
+
+        revision, err := strconv.ParseUint(result[0][3], 10, 32)
+        if err != nil {
+            return nil
+        }
+
+        platform := result[0][4]
+        environment := result[0][5]
+
+        return &ClientVersion{
+            major:       uint32(major),
+            minor:       uint32(minor),
+            revision:    uint32(revision),
+            platform:    platform,
+            environment: environment}
+    }
+
+    return nil
+}
+
+func (e *Engine) checkClientVersion(request *Request, response *Response) (bool) {
+    // ユーザーエージェントからバージョン情報を取得
+    cv := e.parseUserAgent(request.UserAgent)
+    if cv == nil && config.Values.Client.MismatchAction != 0 {
+        // MismatchActionが0以外の場合、バージョン情報を取得できなかったら不正クライアントとしてエラーとする
+        response.SetErrorMessage("ERR_RES_301")
+        return false
+    }
+
+    // ユーザーエージェントからバージョン情報を取得できなかった場合は暫定値を設定
+    if cv == nil {
+        cv = &ClientVersion{major: 1, minor: 0, revision: 0, resourceVersion: "latest", platform: "PC"}
+    }
+
+    if config.Values.Client.MismatchAction != 0 {
+        // アップデート要求バージョンを取得
+        // アップデートが要求されていない場合はnilが返ります
+        rv, err := cv.GetUpdateRequireVersion()
+        if err != nil {
+            // 稼働中のバージョン番号一覧の取得に失敗した場合
+            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RST_201", err)
+        }
+
+        if rv != nil {
+            // アップデート要求バージョンがあるので、アップデート要求のステータスコード(600)を返す
+            response.SetErrorMessage("ERR_RES_302", rv.GetVersion())
+
+            // アップデート用のストアURLを設定
+            switch cv.GetPlatform() {
+            case PlatformApple:
+                response.LinkUrl = config.Values.StoreUrl.Apple
+                break
+            case PlatformGoogle:
+                response.LinkUrl = config.Values.StoreUrl.Google
+                break
+            }
+            return false
+        }
+    }
+
+    return true
+}
+
 func (e *Engine) checkMethod(request *Request, response *Response) (bool) {
-    if v, ok := request.ResourceInfo.Methods[request.Method]; !ok {
+    if v, ok := request.ResourceDefine.Methods[request.Method]; !ok {
         response.StatusCode = http.StatusMethodNotAllowed
         response.ResultCode = ResultNotImplemented
         return false
     } else {
-        request.ResourceDefine = &v
+        request.MethodInfo = &v
         return true
     }
 }
@@ -197,8 +289,8 @@ func (e *Engine) checkSession(request *Request, response *Response) (bool) {
     }
 
     // アクセスメソッドの定義を取得
-    var def *ResourceDefine
-    if val, ok := request.ResourceInfo.Methods[request.Method]; ok {
+    var def *ResourceMethodDefine
+    if val, ok := request.ResourceDefine.Methods[request.Method]; ok {
         def = &val
     }
 
@@ -212,7 +304,7 @@ func (e *Engine) checkSession(request *Request, response *Response) (bool) {
     if len(sessionID) != 36 {
         // 認証を要求されている場合で、セッションIDが不正な場合はエラーとする
         if def.RequireAuthentication {
-            response.SetSystemErrorMessage("ERR_ACC_121", []interface{}{}, "SER_RST_221", request.Name, sessionID)
+            response.SetSystemErrorMessage("ERR_RES_123", []interface{}{}, "SER_RST_221", request.Name, sessionID)
             return false
         }
     } else {
@@ -222,7 +314,7 @@ func (e *Engine) checkSession(request *Request, response *Response) (bool) {
         // 認証を要求されている場合で、セッションを取得できなかった場合はエラーとする
         if request.Session == nil {
             if def.RequireAuthentication {
-                response.SetSystemErrorMessage("ERR_ACC_121", []interface{}{}, "SER_RST_222", request.Name, sessionID)
+                response.SetSystemErrorMessage("ERR_RES_123", []interface{}{}, "SER_RST_222", request.Name, sessionID)
                 return false
             }
         }
@@ -233,7 +325,7 @@ func (e *Engine) checkSession(request *Request, response *Response) (bool) {
 
 func (e *Engine) checkBan(request *Request, response *Response) (bool) {
     if request.Session != nil && request.Session.Account.IsBan {
-        response.SetSystemErrorMessage("ERR_ACC_102", []interface{}{}, "SER_RST_231", request.Name, request.Session.Account.UserID)
+        response.SetSystemErrorMessage("ERR_RES_121", []interface{}{}, "SER_RST_231", request.Name, request.Session.Account.UserID)
         return false
     }
     return true
@@ -246,7 +338,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
         return false
     }
 
-    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", request.ResourceInfo.Path)
+    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", request.ResourceDefine.Path)
     if err != nil {
         response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_102", err)
         return false
@@ -266,7 +358,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
         response.SetErrorMessage("ERR_RES_111")
         return false
     } else {
-        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", request.ResourceInfo.Path, 1, 1)
+        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", request.ResourceDefine.Path, 1, 1)
         if err != nil {
             response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
             return false
@@ -282,7 +374,7 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
     }
 
     // メンテナンス中での実行を許可されているAPIの場合
-    if v, ok := request.ResourceInfo.Methods[request.Method]; ok {
+    if v, ok := request.ResourceDefine.Methods[request.Method]; ok {
         if v.RunInMaintenance {
             return true
         }
@@ -308,9 +400,9 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
         if err == nil {
             response.MaintenanceInfo = MaintenanceInfo{
                 StartTime: startTime,
-                EndTime: endTime,
-                Subject: subject,
-                Body: body}
+                EndTime:   endTime,
+                Subject:   subject,
+                Body:      body}
         }
         break
     }
@@ -323,7 +415,7 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
 }
 
 func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
-    if request.ResourceDefine.IsDebugModeOnly && !config.Values.Server.Debug {
+    if request.MethodInfo.IsDebugModeOnly && !config.Values.Server.Debug.Enable {
         response.SetErrorMessage("ERR_RES_111")
         return false
     }
@@ -331,7 +423,7 @@ func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
 }
 
 func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
-    if request.ResourceDefine.IsAdminModeOnly && request.Session != nil && !request.Session.Account.isAdmin {
+    if request.MethodInfo.IsAdminModeOnly && request.Session != nil && !request.Session.Account.isAdmin {
         response.SetErrorMessage("ERR_RES_111")
         return false
     }
@@ -339,12 +431,16 @@ func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
 }
 
 func (e *Engine) checkParameters(request *Request, response *Response, defines *map[string]Parameter, params *map[string]interface{}) (bool) {
-    if len(*defines) <= 0 { return true }
+    if len(*defines) <= 0 {
+        return true
+    }
 
     var result = true
     for name, def := range *defines {
         // 無視パラメータチェック
-        if name == "RequestID" { continue }
+        if name == "RequestID" {
+            continue
+        }
 
         // 必須パラメータチェック
         if result {
@@ -645,6 +741,7 @@ func (e *Engine) GetResourceManager() (*resourceManager) {
 }
 
 func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) (error) {
+    // 処理開始時間を記録
     startTime := time.Now().UnixNano()
 
     // 初期化チェック
@@ -694,9 +791,10 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
         response.Times["T211_CHECK_METHOD"] = time.Now().UnixNano() - st
     }
 
-    // TODO: クライアントバージョンチェック
+    // クライアントバージョンチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
+        e.checkClientVersion(request, response)
         response.Times["T212_CLIENT_VERSION"] = time.Now().UnixNano() - st
     }
 
@@ -745,14 +843,14 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
     // URLパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkParameters(request, response, &request.ResourceDefine.UrlParameters, &request.GetData)
+        e.checkParameters(request, response, &request.MethodInfo.UrlParameters, &request.GetData)
         response.Times["T251_CHECK_URL_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
     // POSTパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkParameters(request, response, &request.ResourceDefine.PostParameters, &request.PostData)
+        e.checkParameters(request, response, &request.MethodInfo.PostParameters, &request.PostData)
         response.Times["T252_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
     }
 

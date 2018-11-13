@@ -10,10 +10,10 @@ type Reference struct {
     Resources *map[string]*rest.IRestResource
 }
 
-func (res Reference) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Reference) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/reference",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "GET": {
                 Summary:       "RESTリソース一覧取得",
                 Description:   "APIリファレンス用に、RESTリソースの一覧を取得します。",
@@ -29,7 +29,7 @@ func (res Reference) Define() (*rest.ResourceInfo) {
 }
 
 func (res Reference) Get(request *rest.Request, response *rest.Response) (error) {
-    ret := map[string]rest.ResourceInfo{}
+    ret := map[string]rest.ResourceDefine{}
     for i, v := range *res.Resources {
         if v != nil && *v != nil {
             ret[i] = *(*v).Define()

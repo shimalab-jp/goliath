@@ -9,10 +9,10 @@ type Trans struct {
     rest.ResourceBase
 }
 
-func (res Trans) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Trans) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/account/trans",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "アカウント移譲",
                 Description:   "新しい端末にプレイでデータを移譲します。",

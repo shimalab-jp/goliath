@@ -4,27 +4,56 @@
 #
 goliath:
     #
-    # httpサーバー
+    # APIサーバー
     #   port:         Listenポート
-    #   apiurl:       APIを処理するURL。"/v1/" と定義の場合 https://your.domain.com/v1/ 以下をAPIのURLとして処理します。
-    #   timezone:     使用するタイムゾーンを設定します。time.LoadLocation でロード可能な文字列を指定してください。
-    #   userdb:       ユーザーアカウントを分散させるデータベース数を指定します。3を指定した場合は、3つのデータベースで分散させる事になります。
-    #   loglevel:     出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です。
-    #   debug:        デバッグAPI機能を有効にします
-    #   reference:    リファレンス機能を有効にします。
-    #   referenceurl: リファレンスURL。
-    #   cleardb:      debugがtrueかつ、cleardbがtrueの場合に、起動時にgoliathで使用するシステムテーブルをdropします。
+    #   timezone:     使用するタイムゾーンを設定します。time.LoadLocation でロード可能な文字列を指定してください
+    #   userdb:       ユーザーアカウントを分散させるデータベース数を指定します。3を指定した場合は、3つのデータベースで分散させる事になります
+    #   loglevel:     出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です
+    #
+    #   versions:     APIバージョンの定義。バージョンはバージョン番号と、URLで構成されます
+    #     version:    APIバージョン
+    #     url:        このバージョンのURL
+    #
+    #   reference:    APIリファレンスの設定
+    #     enable:     APIリファレンスの有効化
+    #     url:        APIリファレンスのURL
+    #
+    #   debug:        デバッグ設定
+    #     enable:     デバッグ機能の有効化
+    #     slowtime:   API実行時に、slowと判定する時間(ナノ秒)。
+    #     cleardb:    起動時にgoliathで使用するシステムテーブルをdropします
     #
     server:
-        port:           5050
-        apiurl:         "/v1/"
-        timezone:       "Asia/Tokyo"
-        userdb:         1
-        loglevel:       14
-        debug:          false
-        reference:      true
-        referenceurl:   "/reference/"
-        cleardb:        false
+        port:             5050
+        timezone:         "Asia/Tokyo"
+        userdb:           1
+        loglevel:         14
+
+        versions:
+          - version:      1
+            url:          "/v1/"
+
+        reference:
+            enable:       true
+            url:          "/reference/"
+
+        debug:
+            enable:       false
+            slowtime:     500000000
+            cleardb:      false
+
+    #
+    # クライアント判定条件
+    #   useragent:      クライアントのユーザーエージェントのパターン。
+    #                   name/version platform environment
+    #                     platformは iOS, Android, PCの何れか
+    #                     environmentは DEVELOP, STAGING, PRODUCT の何れか
+    #                   例: UserAppName/1.0.0 iOS DEVELOP
+    #   mismatchaction: 1:アクセス拒否する, 0:アクセス拒否しない(Version:1.0.0, Platform:PC, DEVELOPとしてアクセス)
+    #
+    client:
+        useragentpattern: "^GOLIATH APP\\/([0-9]+)\\.([0-9]+)\\.([0-9]+) (iOS|Android|PC) (DEVELOP|STAGING|PRODUCT)$"
+        mismatchaction:   1
 
     #
     # MessageManager
@@ -34,9 +63,9 @@ goliath:
     #                 定義するメッセージコードがシステムと重複した場合はシステムが優先されます。
     #
     message:
-        default:        "ja"
-        system:         "${GOPATH}/src/github.com/shimalab-jp/goliath/system_message.json"
-        user:           ""
+        default:          "ja"
+        system:           "${GOPATH}/src/github.com/shimalab-jp/goliath/system_message.json"
+        user:             ""
 
     #
     # memcached
@@ -45,11 +74,11 @@ goliath:
     # servers:    参照するmemcachedの接続先を配列で指定します。
     #
     memcached:
-        prefix:         "goliath:dev"
-        expiration:     3600
+        prefix:           "goliath:dev"
+        expiration:       3600
         servers:
-          - host:       "localhost"
-            port:       11211
+          - host:         "localhost"
+            port:         11211
 
     #
     # データベース定義
@@ -57,34 +86,34 @@ goliath:
     # ※goliathと同じ接続先を別名で定義してユーザー領域として利用しても、テーブル名が重ならなければ問題ありません。
     #
     databases:
-      - name:           "goliath"
-        driver:         "mysql"
-        host:           "1.2.3.4"
-        port:           3306
-        scheme:         "database_name"
-        user:           "user_name"
-        password:       "password"
+      - name:             "goliath"
+        driver:           "mysql"
+        host:             "1.2.3.4"
+        port:             3306
+        scheme:           "database_name"
+        user:             "user_name"
+        password:         "password"
 
-      - name:           "userdb_example00"
-        driver:         "mysql"
-        host:           "1.2.3.4"
-        port:           3306
-        scheme:         "database_name"
-        user:           "user_name"
-        password:       "password"
+      - name:             "userdb_example00"
+        driver:           "mysql"
+        host:             "1.2.3.4"
+        port:             3306
+        scheme:           "database_name"
+        user:             "user_name"
+        password:         "password"
 
-      - name:           "userdb_example01"
-        driver:         "mysql"
-        host:           "2.3.4.5"
-        port:           3306
-        scheme:         "database_name"
-        user:           "user_name"
-        password:       "password"
+      - name:             "userdb_example01"
+        driver:           "mysql"
+        host:             "2.3.4.5"
+        port:             3306
+        scheme:           "database_name"
+        user:             "user_name"
+        password:         "password"
 
     #
     # ストアURL
     # クライアントのバージョンが古い場合に、アップデート要求情報と一緒に、クライアントに渡されます。
     #
     storeurl:
-        apple:          "itms://itunes.apple.com/jp/app/app_name/id9999999999?l=ja&ls=1&mt=8"
-        google:         "market://details?id=com.company.app_name"
+        apple:            "itms://itunes.apple.com/jp/app/app_name/id9999999999?l=ja&ls=1&mt=8"
+        google:           "market://details?id=com.company.app_name"

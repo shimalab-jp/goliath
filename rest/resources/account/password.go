@@ -9,10 +9,10 @@ type Password struct {
     rest.ResourceBase
 }
 
-func (res Password) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Password) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/account/password",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "パスワードリセット",
                 Description:   "データ移行用のパスワードをリセットします。",

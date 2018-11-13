@@ -16,6 +16,7 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 * アカウント作成ログ、HAUログが取られています。
 * APIスイッチ機能で、任意のタイミングでAPIを実行停止にすることが出来ます。
 * 多言語対応の為のメッセージ定義機能があります。(クライアントのAccept-Languageに従って返す)
+* 作成したAPIを実行、テストするためのダイナミックリファレンス機能付き
 
 
 今後予定している更新
@@ -24,6 +25,7 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 * データベースアクセスの改善
 * 複数データベースを跨いだトランザクションの実現
 * DebugモードでのSQL実行プランの自動取得
+* AccountManagerのキャッシュ対応
 * エラー処理の改善
 * json 以外のフォーマットへの対応
 
@@ -104,11 +106,16 @@ func main() {
         // todo: user initialization
     }
 
-    // [必須]
-    // ユーザーのRESTリソースを追加してください。
+    // [オプション]
+    // ユーザー定義のRESTリソースを追加してください。
     // ※システムリソースや、ユーザーリソースとパスが被る場合は、起動時にエラーとなりますのでご注意ください。
     if err == nil {
-        err = goliath.AppendResource("", nil)
+        if err == nil { err = goliath.AppendResource(&ExampleResource1) }
+        if err == nil { err = goliath.AppendResource(&ExampleResource2) }
+        if err == nil { err = goliath.AppendResource(&ExampleResource3) }
+        if err == nil { err = goliath.AppendResource(&ExampleResource4) }
+        if err == nil { err = goliath.AppendResource(&ExampleResource5) }
+        if err == nil { err = goliath.AppendResource(&ExampleResource6) }
     }
 
     // [オプション]

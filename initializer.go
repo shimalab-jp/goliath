@@ -22,7 +22,7 @@ func initDatabase() (error) {
     err = con.BeginTransaction()
     if err != nil { return err }
 
-    if config.Values.Server.Debug && config.Values.Server.ClearDB {
+    if config.Values.Server.Debug.Enable && config.Values.Server.Debug.ClearDB {
         if err == nil {
             _, err = con.Execute("DROP TABLE IF EXISTS `goliath_mst_version`;")
             if err == nil {
@@ -235,6 +235,13 @@ func initDatabase() (error) {
             log.I("[INITDB] CREATE `goliath_mst_client_version` table.")
         } else {
             log.E("[INITDB] CREATE FAILED `goliath_mst_client_version` table.")
+        }
+
+        if err == nil {
+            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
+            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
+            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
+            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
         }
     }
 

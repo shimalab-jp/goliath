@@ -8,16 +8,35 @@ import (
     "os"
 )
 
+type VersionConfig struct {
+    Version uint32
+    Url     string
+}
+
+type ReferenceConfig struct {
+    Enable bool
+    Url    string
+}
+
+type DebugConfig struct {
+    Enable   bool
+    SlowTime uint64
+    ClearDB  bool
+}
+
 type ServerConfig struct {
     Port      uint16
-    ApiUrl    string
     TimeZone  string
-    LogLevel  uint32
     UserDB    int8
-    Debug     bool
-    Reference bool
-    ReferenceUrl string
-    ClearDB   bool
+    LogLevel  uint32
+    Versions  []VersionConfig
+    Reference ReferenceConfig
+    Debug     DebugConfig
+}
+
+type ClientConfig struct {
+    UserAgentPattern string
+    MismatchAction   uint8
 }
 
 type MessageConfig struct {
@@ -69,6 +88,7 @@ type StoreConfig struct {
 
 type GoliathConfig struct {
     Server    ServerConfig
+    Client    ClientConfig
     Message   MessageConfig
     Memcached MemcachedConfig
     Database  []DatabaseConfig

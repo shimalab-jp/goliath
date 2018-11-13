@@ -9,10 +9,10 @@ type Regist struct {
     rest.ResourceBase
 }
 
-func (res Regist) Define() (*rest.ResourceInfo) {
-    return &rest.ResourceInfo{
+func (res Regist) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
         Path:    "/account/regist",
-        Methods: map[string]rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "アカウント登録",
                 Description:   "新規アカウントを登録します。",

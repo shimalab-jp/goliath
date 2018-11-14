@@ -16,7 +16,8 @@ type Return struct {
     Description string
 }
 
-type Parameter struct {
+type UrlParameter struct {
+    Name        string
     Type        reflect.Kind
     Description string
     Range       []float64
@@ -26,11 +27,22 @@ type Parameter struct {
     Require     bool
 }
 
+type PostParameter struct {
+    Type              reflect.Kind
+    IsMultilineString bool
+    Description       string
+    Range             []float64
+    Select            []interface{}
+    Regex             string
+    Default           interface{}
+    Require           bool
+}
+
 type ResourceMethodDefine struct {
     Summary               string
     Description           string
-    UrlParameters         map[string]Parameter
-    PostParameters        map[string]Parameter
+    UrlParameters         []UrlParameter
+    PostParameters        map[string]PostParameter
     Returns               map[string]Return
     RequireAuthentication bool
     IsDebugModeOnly       bool
@@ -39,8 +51,8 @@ type ResourceMethodDefine struct {
 }
 
 type ResourceDefine struct {
-    Path     string
-    Methods  map[string]ResourceMethodDefine
+    Path    string
+    Methods map[string]ResourceMethodDefine
 }
 
 type IRestResource interface {
@@ -54,7 +66,7 @@ type IRestResource interface {
 type ResourceBase struct{}
 
 func (res *ResourceBase) Define() (*ResourceDefine) {
-    return &ResourceDefine{ Methods: map[string]ResourceMethodDefine{} }
+    return &ResourceDefine{Methods: map[string]ResourceMethodDefine{}}
 }
 
 func (res *ResourceBase) Get(request *Request, response *Response) (error) {

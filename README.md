@@ -5,7 +5,7 @@
 
 このフレームワークは、ゲーム等のプレイヤー管理が必要なアプリ向けの RESTful API 開発用フレームワークです。
 Go言語のパッケージが 'go' から始まるのが多いのと、先日ラピュタをみてたので「goliath(ゴリアテ)」と名付けました。
-このフレームワークで、アクセスしてくる人を「見ろ！人がゴミのようだ！」と言えるように使い倒して頂けると作った甲斐があります。
+アプリ用サーバーに必要最低限の機能は実装していますが、その他に欲しい機能がありましたら、Issueに登録して頂けれれば検討はします。(実装するとは言ってない)
 
 
 特徴
@@ -13,14 +13,14 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 
 * 基本的なプレイヤー管理の実装(生成、パスワード再発行、端末移動)まで済んでいます。
 * プレイヤー生成時に、データベースの振り分け(データベース番号の生成)を自動で行います。
-* アカウント作成ログ、HAUログが取られています。
-* APIスイッチ機能で、任意のタイミングでAPIを実行停止にすることが出来ます。
-* 多言語対応の為のメッセージ定義機能があります。(クライアントのAccept-Languageに従って返す)
-* 作成したAPIを実行、テストするためのダイナミックリファレンス機能付き
+* アカウント作成ログ、HAUログは取得しています。(集計はしていない)
+* APIスイッチ機能で、任意のタイミングでAPIを実行停止にすることが出来ます。(テーブルを直接操作する必要があります)
+* 多言語対応の為のメッセージ定義機能があります。(クライアントのAccept-Languageに従って返します)
+* 作成したAPIを実行、テストするためのダイナミックリファレンス機能があります
 
 
-今後予定している更新
----------------
+実装検討中
+--------
 
 * データベースアクセスの改善
 * 複数データベースを跨いだトランザクションの実現
@@ -28,6 +28,9 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 * AccountManagerのキャッシュ対応
 * エラー処理の改善
 * json 以外のフォーマットへの対応
+* URLパラメータの改修(現在のQueryString形式からパス方式へ)
+* マルチバージョン対応
+* 基本の管理ページ
 
 
 開発環境
@@ -38,8 +41,9 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 * nginx 1.14
 * memcached 1.5
 * mysql 5.7, mariadb 10.2
+* chrome/safari
 
-※基本、golangが可動すれば動くはずですが、動作を保証するものではありません。
+※基本、golangが可動すれば動くはずですが、動作を保証するものではありません。(ちゃんと動作テストしてね)
 
 
 依存関係
@@ -66,6 +70,7 @@ $ go get github.com/shimalab-jp/goliath
 使い方
 ------
 
+### main.go
 ```Go
 package main
 
@@ -137,11 +142,71 @@ func main() {
 }
 ```
 
+### exmaple1.go
+POST処理 実装例
+```Go
+package example
+
+import (
+    "github.com/shimalab-jp/goliath/rest"
+    "reflect"
+)
+
+// API用の構造体を作成します
+type Example1 struct {
+    // ResourceBaseを引き継ぐと実装が楽です
+    rest.ResourceBase
+}
+
+// Defineは必ず実装します。
+// ここで、どんなAPIなのか、どういったパラメータを受け取り、チェックするのかを定義します。
+// 今回は Type が Int32 に設定していますが、数値として評価出来ない値が渡されると、
+// APIの実行前に REST エンジン側でチェックし、自動的に不正なパラメータを防ぎます。
+func (res Example1) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
+        Path:    "/example/diff",
+        Methods: map[string]rest.ResourceMethodDefine{
+            "POST": {
+                Summary:       "減算",
+                Description:   "減算します",
+                UrlParameters: []rest.UrlParameter{},
+                PostParameters: map[string]rest.PostParameter{},
+                Returns: map[string]rest.Return{
+                    "Result": {
+                        Type:        reflect.Int32,
+                        Description: "減算結果"}},
+                RequireAuthentication: false,
+                IsDebugModeOnly:       false,
+                RunInMaintenance:      false}}}
+}
+
+// Defineで定義したメソッドの実装を行います。
+// 今回はPOSTなので、Postを実装します。
+// パラメータは、 request の Get〜メソッドで取得する事ができます。
+// 結果は response の Result に格納してください。
+func (res Example1) Post(request *rest.Request, response *rest.Response) (error) {
+    // パラメータを取得
+    v1 := request.GetPostInt32("Value1", 0)
+    v2 := request.GetPostInt32("Value2", 0)
+
+    // 処理
+    result := v1 - v2
+
+    // 戻り値に値をセット
+    response.Result = map[string]interface{}{"Result": result}
+
+    return nil
+}
+```
+
+### exmaple2.go
+```Go
+```
+
 
 ライセンス
 --------
 
-このパッケージは、 Apache License 2.0 の下に公開しています。
+このパッケージのライセンスは、 Apache License 2.0 を適用するものとします。
 Apache License 2.0 については、 LICENSE ファイルをご参照ください。
-
 

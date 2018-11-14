@@ -16,12 +16,13 @@ func (res Auth) Define() (*rest.ResourceDefine) {
             "POST": {
                 Summary:       "アカウント認証",
                 Description:   "アカウントトークンでアカウントを認証します。",
-                UrlParameters: map[string]rest.Parameter{},
-                PostParameters: map[string]rest.Parameter{
+                UrlParameters: []rest.UrlParameter{},
+                PostParameters: map[string]rest.PostParameter{
                     "Token": {
                         Type:        reflect.String,
                         Description: "アカウントトークン",
-                        Regex:       "/[0-9A-F]{53,53}/"}},
+                        Regex:       "/[0-9A-F]{53,53}/",
+                        Require:     true}},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
@@ -33,7 +34,7 @@ func (res Auth) Define() (*rest.ResourceDefine) {
 
 func (res Auth) Post(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
-    token := request.GetString("Token", "")
+    token := request.GetPostString("Token", "")
 
     // アカウントを取得
     am := rest.GetAccountManager()

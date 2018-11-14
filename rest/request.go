@@ -4,7 +4,6 @@ import (
     "fmt"
     "github.com/shimalab-jp/goliath/message"
     "strconv"
-    "strings"
 )
 
 type Request struct {
@@ -35,102 +34,95 @@ type Request struct {
     MessageManager *message.GoliathMessageManager
 }
 
-func (request *Request) GetString(name string, defaultValue string) (string) {
-    if strings.ToUpper(request.Method) == "POST" {
-        if value, ok := request.PostData[name]; ok {
-            return fmt.Sprint(value)
-        }
-    }
-
-    if value, ok := request.GetData[name]; ok {
+func (request *Request) GetPostString(name string, defaultValue string) (string) {
+    if value, ok := request.PostData[name]; ok {
         return fmt.Sprint(value)
     }
-
     return defaultValue
 }
 
-func (request *Request) GetInt8(name string, defaultValue int8) (int8) {
-    ret, err := strconv.ParseInt(request.GetString(name, string(defaultValue)), 10, 8)
+func (request *Request) GetPostInt8(name string, defaultValue int8) (int8) {
+    ret, err := strconv.ParseInt(request.GetPostString(name, string(defaultValue)), 10, 8)
     if err == nil {
         return int8(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetInt16(name string, defaultValue int16) (int16) {
-    ret, err := strconv.ParseInt(request.GetString(name, string(defaultValue)), 10, 16)
+func (request *Request) GetPostInt16(name string, defaultValue int16) (int16) {
+    ret, err := strconv.ParseInt(request.GetPostString(name, string(defaultValue)), 10, 16)
     if err == nil {
         return int16(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetInt32(name string, defaultValue int32) (int32) {
-    ret, err := strconv.ParseInt(request.GetString(name, string(defaultValue)), 10, 32)
+func (request *Request) GetPostInt32(name string, defaultValue int32) (int32) {
+    ret, err := strconv.ParseInt(request.GetPostString(name, string(defaultValue)), 10, 32)
     if err == nil {
         return int32(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetInt64(name string, defaultValue int64) (int64) {
-    ret, err := strconv.ParseInt(request.GetString(name, string(defaultValue)), 10, 64)
+func (request *Request) GetPostInt64(name string, defaultValue int64) (int64) {
+    ret, err := strconv.ParseInt(request.GetPostString(name, string(defaultValue)), 10, 64)
     if err == nil {
         return int64(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetUInt8(name string, defaultValue uint8) (uint8) {
-    ret, err := strconv.ParseUint(request.GetString(name, string(defaultValue)), 10, 8)
+func (request *Request) GetPostUInt8(name string, defaultValue uint8) (uint8) {
+    ret, err := strconv.ParseUint(request.GetPostString(name, string(defaultValue)), 10, 8)
     if err == nil {
         return uint8(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetUInt16(name string, defaultValue uint16) (uint16) {
-    ret, err := strconv.ParseUint(request.GetString(name, string(defaultValue)), 10, 16)
+func (request *Request) GetPostUInt16(name string, defaultValue uint16) (uint16) {
+    ret, err := strconv.ParseUint(request.GetPostString(name, string(defaultValue)), 10, 16)
     if err == nil {
         return uint16(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetUInt32(name string, defaultValue uint32) (uint32) {
-    ret, err := strconv.ParseUint(request.GetString(name, string(defaultValue)), 10, 32)
+func (request *Request) GetPostUInt32(name string, defaultValue uint32) (uint32) {
+    ret, err := strconv.ParseUint(request.GetPostString(name, string(defaultValue)), 10, 32)
     if err == nil {
         return uint32(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetUInt64(name string, defaultValue uint64) (uint64) {
-    ret, err := strconv.ParseUint(request.GetString(name, string(defaultValue)), 10, 64)
+func (request *Request) GetPostUInt64(name string, defaultValue uint64) (uint64) {
+    ret, err := strconv.ParseUint(request.GetPostString(name, string(defaultValue)), 10, 64)
     if err == nil {
         return uint64(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetFloat32(name string, defaultValue float32) (float32) {
-    ret, err := strconv.ParseFloat(request.GetString(name, ""), 32)
+func (request *Request) GetPostFloat32(name string, defaultValue float32) (float32) {
+    ret, err := strconv.ParseFloat(request.GetPostString(name, ""), 32)
     if err == nil {
         return float32(ret)
     }
     return defaultValue
 }
 
-func (request *Request) GetFloat64(name string, defaultValue float64) (float64) {
-    ret, err := strconv.ParseFloat(request.GetString(name, ""), 64)
+func (request *Request) GetPostFloat64(name string, defaultValue float64) (float64) {
+    ret, err := strconv.ParseFloat(request.GetPostString(name, ""), 64)
     if err == nil {
         return ret
     }
     return defaultValue
 }
 
-func (request *Request) GetBoolean(name string, defaultValue bool) (bool) {
-    ret, err := strconv.ParseBool(request.GetString(name, "false"))
+func (request *Request) GetPostBoolean(name string, defaultValue bool) (bool) {
+    ret, err := strconv.ParseBool(request.GetPostString(name, "false"))
     if err == nil {
         return ret
     }

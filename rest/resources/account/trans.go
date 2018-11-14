@@ -16,8 +16,8 @@ func (res Trans) Define() (*rest.ResourceDefine) {
             "POST": {
                 Summary:       "アカウント移譲",
                 Description:   "新しい端末にプレイでデータを移譲します。",
-                UrlParameters: map[string]rest.Parameter{},
-                PostParameters: map[string]rest.Parameter{
+                UrlParameters: []rest.UrlParameter{},
+                PostParameters: map[string]rest.PostParameter{
                     "PlayerID": {
                         Type:        reflect.String,
                         Default:     rest.PlatformNone,

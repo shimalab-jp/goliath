@@ -1,6 +1,6 @@
 @charset "utf-8";
 
-* { font-family: "M PLUS 1p", "M PLUS Rounded 1c"; font-size:10pt; color:#443333; }
+* { font-family: "M PLUS Rounded 1c", "M PLUS 1p", sans-serif; font-size:11pt; color:#efefef; }
 body { margin:0; padding:0; }
 
 .block {
@@ -49,12 +49,11 @@ h4 {
 	left:0;
 	top:0;
 	position:absolute;
-	border-bottom: 1px solid darkgray;
     background-color: #444;
 
-	box-shadow: 0 1px 3px #000;
-	-moz-box-shadow: 0 2px 3px #000; /* Firefox用*/
-	-webkit-box-shadow: 0 1px 3px #000; /* Google Chrome, Safari用*/
+    /*box-shadow: 0 1px 3px #000;*/
+    /*-moz-box-shadow: 0 2px 3px #000;*/ /* Firefox用*/
+    /*-webkit-box-shadow: 0 1px 3px #000;*/ /* Google Chrome, Safari用*/
 }
 
 #header_left {
@@ -73,6 +72,7 @@ h4 {
 
 #api_name {
     font-size: 20pt;
+    font-family: "M PLUS 1p", "M PLUS Rounded 1c", Arial, sans-serif;
     float:left;
     color:white;
 }
@@ -81,6 +81,7 @@ h4 {
     padding-left: 2px;
     font-size: 14pt;
     font-weight: bold;
+    font-family: "M PLUS 1p", "M PLUS Rounded 1c", Arial, sans-serif;
     color:white;
 }
 #env_name       { float:left; padding-left:20px; padding-top:8px; }
@@ -97,45 +98,87 @@ h4 {
 #revision { padding:4px 0 0 20px; font-size:8pt; font-weight:normal; float:left; }
 
 
-.contents {
-	margin: 10px;
-}
 
-.menuDescription {
-	font-size: 9pt;
-	color: #505050;
-}
 
 #content {
-    margin: 0 0 0 250px;
+    margin: 0;
     padding:0;
-    top:30px;
+    top:65px;
+    left:270px;
     position:absolute;
     overflow:hidden;
     border: 0 solid red;
 }
 
-#contentFrame {
+#content_frame {
     height:100%;
     width:100%;
     border:0;
     overflow:auto;
+    background-color: #595959;
 }
 
-#leftMenu {
+
+
+/******************************************************
+  MENU / accordion
+*******************************************************/
+/** menu root */
+#left_menu {
 	margin:0;
-	padding:10px 3px 3px 3px;
+	padding:0;
 	left:0;
 	top:65px;
 	width:270px;
 	position:absolute;
-	background-color:#707070;
+	background-color:#494949;
     overflow:scroll;
 
-	box-shadow: 2px 2px 5px #999;
-	-moz-box-shadow: 2px 2px 5px #999; /* Firefox用*/
-	-webkit-box-shadow: 2px 2px 5px #999; /* Google Chrome, Safari用*/
+    /*box-shadow: 2px 2px 5px #222;*/
+    /*-moz-box-shadow: 2px 2px 5px #222;*/ /* Firefox用*/
+    /*-webkit-box-shadow: 2px 2px 5px #222;*/ /* Google Chrome, Safari用*/
 }
+
+/** accordion : API group */
+#accordion .api_group_name {
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+/** accordion : API path */
+#accordion .api_path {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+}
+
+/** accordion : 概要 */
+#accordion .api_summary {
+    font-family: "M PLUS Rounded 1c", "M PLUS 1p", "Sawarabi Gothic", sans-serif;
+    font-size: 11pt;
+}
+
+
+
+
+
+/******************************************************
+  REFERENCE
+*******************************************************/
+/** referece: contents common */
+.contents {
+    margin: 15px;
+}
+
+/** referece: title */
+h1.api_title {
+    font-family: "M PLUS 1p", "M PLUS Rounded 1c", sans-serif;
+    font-size: 22pt;
+    font-weight: bold;
+}
+
+
+
 
 .sub_item_table {
     width:100%;
@@ -164,15 +207,6 @@ h4 {
 ol {
     margin: 0;
     padding: 0;
-}
-
-.menu_item {
-    font-size:9pt;
-}
-
-
-.menu_description {
-    font-size:9pt;
 }
 
 
@@ -219,6 +253,11 @@ table.list th {
     padding-right: 5px;
     text-align: left;
     font-size: 10pt;
+    font-family: "Sawarabi Gothic", sans-serif;
+}
+
+table.list td {
+    font-family: "Sawarabi Gothic", sans-serif;
 }
 
 table.list td.name {
@@ -305,7 +344,7 @@ table.result td.value {
 }
 
 
-.notice         { font-size:small; }
+
 .result_warning { color:red; }
 .warning        { color:red; font-weight:bold; }
 

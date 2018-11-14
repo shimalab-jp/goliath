@@ -16,8 +16,8 @@ func (res Regist) Define() (*rest.ResourceDefine) {
             "POST": {
                 Summary:       "アカウント登録",
                 Description:   "新規アカウントを登録します。",
-                UrlParameters: map[string]rest.Parameter{},
-                PostParameters: map[string]rest.Parameter{
+                UrlParameters: []rest.UrlParameter{},
+                PostParameters: map[string]rest.PostParameter{
                     "Platform": {
                         Type:        reflect.Uint8,
                         Default:     rest.PlatformNone,
@@ -35,7 +35,7 @@ func (res Regist) Define() (*rest.ResourceDefine) {
 
 func (res Regist) Post(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
-    platform := request.GetInt8("Platform", rest.PlatformNone)
+    platform := request.GetPostInt8("Platform", rest.PlatformNone)
 
     // アカウントを作成
     am := rest.GetAccountManager()

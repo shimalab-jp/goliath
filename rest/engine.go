@@ -430,7 +430,7 @@ func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkParameters(request *Request, response *Response, defines *map[string]Parameter, params *map[string]interface{}) (bool) {
+func (e *Engine) checkPostParameters(request *Request, response *Response, defines *map[string]PostParameter, params *map[string]interface{}) (bool) {
     if len(*defines) <= 0 {
         return true
     }
@@ -840,17 +840,17 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
         response.Times["T242_CHECK_ADMIN_ONLY"] = time.Now().UnixNano() - st
     }
 
-    // URLパラメータチェック
+    // TODO: URLパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkParameters(request, response, &request.MethodInfo.UrlParameters, &request.GetData)
+        //e.checkParameters(request, response, &request.MethodInfo.UrlParameters, &request.GetData)
         response.Times["T251_CHECK_URL_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
     // POSTパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkParameters(request, response, &request.MethodInfo.PostParameters, &request.PostData)
+        e.checkPostParameters(request, response, &request.MethodInfo.PostParameters, &request.PostData)
         response.Times["T252_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
     }
 

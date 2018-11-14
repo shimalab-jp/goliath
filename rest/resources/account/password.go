@@ -16,13 +16,13 @@ func (res Password) Define() (*rest.ResourceDefine) {
             "POST": {
                 Summary:       "パスワードリセット",
                 Description:   "データ移行用のパスワードをリセットします。",
-                UrlParameters: map[string]rest.Parameter{},
-                PostParameters: map[string]rest.Parameter{},
+                UrlParameters: []rest.UrlParameter{},
+                PostParameters: map[string]rest.PostParameter{},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
                         Description: "アカウント情報"}},
-                RequireAuthentication: false,
+                RequireAuthentication: true,
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}
 }

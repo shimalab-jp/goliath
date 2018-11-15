@@ -126,7 +126,6 @@ func (cv *ClientVersion) GetRequireVersions() (ClientVersions, error) {
         }
 
         sort.Sort(ret)
-        log.D("%+v", ret)
     }
 
     {

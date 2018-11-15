@@ -18,7 +18,7 @@ type Example1 struct {
 func (res Example1) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
-            "GET": {
+            "POST": {
                 Summary:       "減算",
                 Description:   "減算します",
                 UrlParameters: []rest.UrlParameter{},

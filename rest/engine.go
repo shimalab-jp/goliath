@@ -113,8 +113,18 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     // リモートアドレスを取得
     returnValue.RemoteAddress = httpRequest.RemoteAddr
 
+    // ヘッダーを取得
+    for key := range httpRequest.Header {
+        returnValue.Headers[key] = httpRequest.Header.Get(key)
+    }
+
     // ユーザーエージェントを取得
     returnValue.UserAgent = httpRequest.UserAgent()
+
+    // リファレンス用のユーザーエージェントを取得
+    if ua, ok := returnValue.Headers["X-Goliath-User-Agent"]; ok {
+        returnValue.UserAgent = ua
+    }
 
     // 要求言語を取得
     languages, err := e.getAcceptLanguages(httpRequest)
@@ -146,10 +156,6 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     apiPath := strings.TrimPrefix(httpRequest.URL.Path, removeUrl)
     returnValue.Name = strings.ToLower("/" + strings.TrimLeft(strings.TrimSuffix(apiPath, path.Ext(httpRequest.URL.Path)), "/"))
 
-    // ヘッダーを取得
-    for key := range httpRequest.Header {
-        returnValue.Headers[key] = httpRequest.Header.Get(key)
-    }
 
     // QueryStringを取得
     returnValue.QueryString = httpRequest.URL.RawQuery

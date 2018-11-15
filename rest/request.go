@@ -28,7 +28,8 @@ type Request struct {
     Resource       *IRestResource
     MethodInfo     *ResourceMethodDefine
     ResourceDefine *ResourceDefine
-    Session        *Session
+    Token          string
+    Account        *accountInfo
     ParseTime      int64
     RequestID      string
     MessageManager *message.GoliathMessageManager

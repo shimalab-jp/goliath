@@ -1,18 +1,16 @@
-package fcm
+package v1
 
 import (
-    "reflect"
-
     "github.com/shimalab-jp/goliath/rest"
+    "reflect"
 )
 
-type Regist struct {
+type FcmRegist struct {
     rest.ResourceBase
 }
 
-func (res Regist) Define() (*rest.ResourceDefine) {
+func (res FcmRegist) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/fcm/regist",
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "FCMトークン登録／更新",
@@ -33,6 +31,6 @@ func (res Regist) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res Regist) Post(request *rest.Request, response *rest.Response) (error) {
+func (res FcmRegist) Post(request *rest.Request, response *rest.Response) (error) {
     return nil
 }

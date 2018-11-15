@@ -41,6 +41,11 @@ h4 {
     font-weight: bold;
 }
 
+strong.orange { color: orange; }
+strong.blue   { color: lightblue; }
+strong.green  { color: lightgreen; }
+
+
 #header {
     margin:0;
     padding:0;
@@ -330,7 +335,7 @@ table.result td.item {
     padding-left: 5px;
     padding-right: 5px;
     text-align: left;
-    width: 230px;
+    width: 270px;
 }
 
 table.result td.value {

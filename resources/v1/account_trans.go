@@ -1,17 +1,17 @@
-package account
+package v1
 
 import (
     "github.com/shimalab-jp/goliath/rest"
     "reflect"
+    "strconv"
 )
 
-type Trans struct {
+type AccountTrans struct {
     rest.ResourceBase
 }
 
-func (res Trans) Define() (*rest.ResourceDefine) {
+func (res AccountTrans) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/account/trans",
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "アカウント移譲",
@@ -35,7 +35,7 @@ func (res Trans) Define() (*rest.ResourceDefine) {
                         Default:     rest.PlatformNone,
                         Select:      []interface{}{rest.PlatformNone, rest.PlatformApple, rest.PlatformGoogle},
                         Require:     true,
-                        Description: "プラットフォーム。" + string(rest.PlatformNone) + ":None, " + string(rest.PlatformApple) + ":Apple, " + string(rest.PlatformGoogle) + ":Google"}},
+                        Description: "プラットフォーム。" + strconv.Itoa(rest.PlatformNone) + ":None, " + strconv.Itoa(rest.PlatformApple) + ":Apple, " + strconv.Itoa(rest.PlatformGoogle) + ":Google"}},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
@@ -46,6 +46,6 @@ func (res Trans) Define() (*rest.ResourceDefine) {
 }
 
 
-func (res Trans) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountTrans) Post(request *rest.Request, response *rest.Response) (error) {
     return nil
 }

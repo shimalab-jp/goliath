@@ -1,16 +1,15 @@
-package debug
+package v1
 
 import (
     "github.com/shimalab-jp/goliath/rest"
 )
 
-type Cache struct {
+type DebugCache struct {
     rest.ResourceBase
 }
 
-func (res Cache) Define() (*rest.ResourceDefine) {
+func (res DebugCache) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/debug/cache",
         Methods: map[string]rest.ResourceMethodDefine{
             "DELETE": {
                 Summary:               "キャッシュクリア",
@@ -23,6 +22,6 @@ func (res Cache) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      true}}}
 }
 
-func (res Cache) Delete(request *rest.Request, response *rest.Response) (error) {
+func (res DebugCache) Delete(request *rest.Request, response *rest.Response) (error) {
     return nil
 }

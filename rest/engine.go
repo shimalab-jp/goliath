@@ -4,7 +4,10 @@ import (
     "encoding/json"
     "fmt"
     "github.com/pkg/errors"
+    "github.com/shimalab-jp/goliath/config"
     "github.com/shimalab-jp/goliath/database"
+    "github.com/shimalab-jp/goliath/log"
+    "github.com/shimalab-jp/goliath/message"
     "io/ioutil"
     "net/http"
     "path"
@@ -13,10 +16,6 @@ import (
     "strconv"
     "strings"
     "time"
-
-    "github.com/shimalab-jp/goliath/config"
-    "github.com/shimalab-jp/goliath/log"
-    "github.com/shimalab-jp/goliath/message"
 )
 
 type ExecutionHooks interface {
@@ -28,7 +27,6 @@ type Engine struct {
     initialized      bool
     hooks            *ExecutionHooks
     resourceManager  *resourceManager
-    sessionManager   *sessionManager
     userAgentPattern *regexp.Regexp
 }
 
@@ -40,7 +38,6 @@ func InitializeEngine() {
         // エンジンのインスタンスを作成
         instance = &Engine{
             resourceManager:  createResourceManager(),
-            sessionManager:   createSessionManager(),
             userAgentPattern: regexp.MustCompile(config.Values.Client.UserAgentPattern),
             initialized:      true}
     }
@@ -93,7 +90,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
         PostData:     map[string]interface{}{},
         Resource:     nil,
         MethodInfo:   nil,
-        Session:      nil}
+        Account:      nil}
 
     // バージョン判定
     for _, v := range config.Values.Server.Versions {
@@ -167,7 +164,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
 
     // POSTデータをパース
     if strings.ToLower(returnValue.Method) == "post" {
-        if returnValue.ContentType == "application/json" {
+        if returnValue.OutputFormat == "json" {
             // 全データを読込
             buffer, _ := ioutil.ReadAll(httpRequest.Body)
 
@@ -181,7 +178,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     }
 
     // RESTリソースのインスタンスを作成
-    returnValue.Resource = e.resourceManager.FindResource(returnValue.Name)
+    returnValue.Resource = e.resourceManager.FindResource(returnValue.Version, returnValue.Name)
     if returnValue.Resource == nil || (*returnValue.Resource) == nil {
         return nil, nil
     }
@@ -281,42 +278,39 @@ func (e *Engine) checkMethod(request *Request, response *Response) (bool) {
     }
 }
 
-func (e *Engine) checkSession(request *Request, response *Response) (bool) {
-    // ヘッダからセッションIDを取得
-    var sessionID string
-    if val, ok := request.Headers["X-Goliath-SSID"]; ok {
-        sessionID = val
+func (e *Engine) checkToken(request *Request, response *Response) (bool) {
+    // ヘッダからトークンを取得
+    var token string
+    if val, ok := request.Headers["X-Goliath-Token"]; ok {
+        token = strings.ToLower(val)
     }
 
-    // アクセスメソッドの定義を取得
-    var def *ResourceMethodDefine
-    if val, ok := request.ResourceDefine.Methods[request.Method]; ok {
-        def = &val
-    }
-
-    // アクセスメソッドの定義がされていない場合
-    if def == nil {
-        response.StatusCode = http.StatusMethodNotAllowed
-        response.ResultCode = ResultNotImplemented
-        return false
-    }
-
-    if len(sessionID) != 36 {
-        // 認証を要求されている場合で、セッションIDが不正な場合はエラーとする
-        if def.RequireAuthentication {
-            response.SetSystemErrorMessage("ERR_RES_123", []interface{}{}, "SER_RST_221", request.Name, sessionID)
+    if len(token) != 128 {
+        // 認証を要求されている場合で、トークンが不正な場合はエラーとする
+        if request.MethodInfo.RequireAuthentication {
+            response.SetSystemErrorMessage("ERR_RES_122", []interface{}{}, "SER_RST_221", request.Name, token)
             return false
         }
     } else {
-        // 記録されているセッション情報を取得
-        request.Session = e.sessionManager.Get(sessionID)
+        // アカウントを取得
+        account, err := GetAccountManager().GetAccountByToken(token)
+        if err != nil {
+            log.Ee(err)
+            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RST_222", request.Name, token, err)
+            return false
+        }
 
-        // 認証を要求されている場合で、セッションを取得できなかった場合はエラーとする
-        if request.Session == nil {
-            if def.RequireAuthentication {
-                response.SetSystemErrorMessage("ERR_RES_123", []interface{}{}, "SER_RST_222", request.Name, sessionID)
+        // アカウント情報を格納
+        request.Account = account
+
+        // 認証を要求されている場合で、アカウントを取得できなかった場合はエラーとする
+        if request.Account == nil {
+            if request.MethodInfo.RequireAuthentication {
+                response.SetErrorMessage("ERR_RES_122", request.Name, token)
                 return false
             }
+        } else {
+            request.Token = account.Token
         }
     }
 
@@ -324,8 +318,8 @@ func (e *Engine) checkSession(request *Request, response *Response) (bool) {
 }
 
 func (e *Engine) checkBan(request *Request, response *Response) (bool) {
-    if request.Session != nil && request.Session.Account.IsBan {
-        response.SetSystemErrorMessage("ERR_RES_121", []interface{}{}, "SER_RST_231", request.Name, request.Session.Account.UserID)
+    if request.Account != nil && request.Account.IsBan {
+        response.SetErrorMessage("ERR_RES_121")
         return false
     }
     return true
@@ -338,7 +332,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
         return false
     }
 
-    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", request.ResourceDefine.Path)
+    result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", (*request.Resource).GetPath())
     if err != nil {
         response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_102", err)
         return false
@@ -358,7 +352,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
         response.SetErrorMessage("ERR_RES_111")
         return false
     } else {
-        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", request.ResourceDefine.Path, 1, 1)
+        _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", (*request.Resource).GetPath(), 1, 1)
         if err != nil {
             response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
             return false
@@ -369,7 +363,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
 
 func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
     // 実行ユーザーが管理者の場合
-    if request.Session != nil && request.Session.Account.isAdmin {
+    if request.Account != nil && request.Account.IsAdmin {
         return true
     }
 
@@ -423,20 +417,20 @@ func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
 }
 
 func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
-    if request.MethodInfo.IsAdminModeOnly && request.Session != nil && !request.Session.Account.isAdmin {
+    if request.MethodInfo.IsAdminModeOnly && request.Account != nil && !request.Account.IsAdmin {
         response.SetErrorMessage("ERR_RES_111")
         return false
     }
     return true
 }
 
-func (e *Engine) checkPostParameters(request *Request, response *Response, defines *map[string]PostParameter, params *map[string]interface{}) (bool) {
-    if len(*defines) <= 0 {
+func (e *Engine) checkPostParameters(request *Request, response *Response) (bool) {
+    if len(request.MethodInfo.PostParameters) <= 0 {
         return true
     }
 
     var result = true
-    for name, def := range *defines {
+    for name, def := range request.MethodInfo.PostParameters {
         // 無視パラメータチェック
         if name == "RequestID" {
             continue
@@ -445,19 +439,19 @@ func (e *Engine) checkPostParameters(request *Request, response *Response, defin
         // 必須パラメータチェック
         if result {
             if def.Require {
-                if _, ok := (*params)[name]; !ok {
+                if _, ok := request.PostData[name]; !ok {
                     response.SetErrorMessage("ERR_RES_101", name)
                     result = false
                 }
             } else {
-                if _, ok := (*params)[name]; !ok {
+                if _, ok := request.PostData[name]; !ok {
                     continue
                 }
             }
         }
 
         // 値を文字列に変換
-        strVal := fmt.Sprintf("%+v", (*params)[name])
+        strVal := fmt.Sprintf("%+v", request.PostData[name])
 
         // 型チェック(全て)
         if result {
@@ -625,7 +619,7 @@ func (e *Engine) checkPostParameters(request *Request, response *Response, defin
 }
 
 func (e *Engine) updateLastAccess(request *Request, response *Response) {
-    if request.Session == nil {
+    if request.Account == nil {
         return
     }
 
@@ -661,8 +655,8 @@ func (e *Engine) updateLastAccess(request *Request, response *Response) {
             "REPLACE INTO `goliath_log_hau` (`access_date`, `access_hour`, `user_id`, `platform`) VALUES (?, ?, ?, ?);",
             request.BusinessDay.BusinessDay,
             hour,
-            request.Session.Account.UserID,
-            request.Session.Account.Platform)
+            request.Account.UserID,
+            request.Account.Platform)
         if err != nil {
             response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
         }
@@ -721,13 +715,13 @@ func (e *Engine) getStatusMessage(statusCode int) (string) {
     return "Not Implemented"
 }
 
-func (e *Engine) AppendResource(resource *IRestResource) (error) {
+func (e *Engine) AppendResource(version uint32, path string, resource *IRestResource) (error) {
     // 初期化チェック
     if !e.initialized {
         return errors.New("not initialized.")
     }
 
-    return e.resourceManager.Append(resource)
+    return e.resourceManager.Append(version, path, resource)
 }
 
 func (e *Engine) SetHooks(hooks *ExecutionHooks) {
@@ -801,7 +795,7 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
     // 認証
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkSession(request, response)
+        e.checkToken(request, response)
         response.Times["T213_AUTHENTICATION"] = time.Now().UnixNano() - st
     }
 
@@ -850,13 +844,13 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
     // POSTパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkPostParameters(request, response, &request.MethodInfo.PostParameters, &request.PostData)
+        e.checkPostParameters(request, response)
         response.Times["T252_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
     // 最終アクセス日時更新
     if response.ResultCode == ResultOK {
-        if request.Session != nil {
+        if request.Account != nil {
             st := time.Now().UnixNano()
             e.updateLastAccess(request, response)
             response.Times["T280_UPDATE_LAST_ACCESS_TIME"] = time.Now().UnixNano() - st

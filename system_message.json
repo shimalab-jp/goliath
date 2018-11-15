@@ -12,28 +12,29 @@
   { "code": "ERR_RES_112", "result":503, "text": { "ja": "ご迷惑をおかけし申し訳ありません。\n只今サーバーのメンテナンス中です。暫く経ってからアクセスしてください。(RES112)" }},
   { "code": "ERR_RES_121", "result":403, "text": { "ja": "このアカウントは停止されています。お心当たりが無い場合は、お手数をおかけしますが、カスタマーサポートまでお問い合わせください。(RES121)" }},
   { "code": "ERR_RES_122", "result":410, "text": { "ja": "端末の認証に失敗しました。\nデータ移行を行なわれた場合は、再度この端末にデータ移行をして頂くか、再インストールして下さい。(RES122)" }},
-  { "code": "ERR_RES_123", "result":401, "text": { "ja": "認証されていないか、認証の有効期限が切れました。お手数をおかけしますが、もう一度ログインし直してください。(RES123)" }},
+
   { "code": "ERR_RES_301", "result":400, "text": { "ja": "このクライアントからのアクセスは許可されていません。(RES301)" }},
   { "code": "ERR_RES_302", "result":600, "text": { "ja": "新しいバージョン %s にアップデートしてください。(RES302)" }},
 
   { "code": "SER_RST_201", "result":0, "text": { "ja": "クライアントバージョン情報の取得に失敗しました。(RST201)\n%+v" }},
-  { "code": "SER_RST_221", "result":0, "text": { "ja": "セッションIDが入力されていないか、正しくありません。(API:%s, SSID:%s SER:RST-221)" }},
-  { "code": "SER_RST_222", "result":0, "text": { "ja": "認証されていないか、セッションが切れています。(API:%s, SSID:%s SER:RST-222)" }},
-  { "code": "SER_RST_231", "result":0, "text": { "ja": "アカウントがBANされている為、処理を中断しました。(API:%s, SSID:%s SER:RST-231)" }},
+  { "code": "SER_RST_221", "result":0, "text": { "ja": "不正なアカウントトークンを検知しました。API:%s, TOKEN:%s (RST221)" }},
+  { "code": "SER_RST_222", "result":0, "text": { "ja": "アカウントの取得処理に失敗しました。API:%s, TOKEN:%s (RST222)\n%+v" }},
 
-  { "code": "SER_ACC_101", "result":0, "text": { "ja": "アカウントの登録処理で例外が発生しました。(試行回数:%d, SER:ACC-101)\n%s" }},
+
+
   { "code": "SER_ACC_102", "result":0, "text": { "ja": "アカウントの登録処理で試行回数が上限を超えた為、処理を中断しました。(試行回数:%d, SER:ACC-102)" }},
   { "code": "SER_ACC_111", "result":0, "text": { "ja": "アカウントの移行処理で例外が発生しました。(試行回数:%d, SER:ACC-111)\n%s" }},
   { "code": "SER_ACC_112", "result":0, "text": { "ja": "アカウントの移行処理で試行回数が上限を超えた為、処理を中断しました。(試行回数:%d, SER:ACC-112)" }},
   { "code": "SER_ACC_201", "result":0, "text": { "ja": "プレイヤーIDの生成処理で、試行回数の上限(%d回)を超えました。(SER:ACC-201)" }},
-  { "code": "SER_ACC_211", "result":0, "text": { "ja": "アカウントの登録処理件数が不正でした。(更新予定件数:1件, 更新件数:%d件, SER:ACC-211)" }},
-  { "code": "SER_ACC_221", "result":0, "text": { "ja": "アカウントトークンの生成処理で、試行回数の上限(%d回)を超えました。(SER:ACC-221)" }},
-  { "code": "SER_ACC_231", "result":0, "text": { "ja": "アカウントトークンの登録処理件数が不正でした。(更新予定件数:1件, 更新件数:%d件, SER:ACC-231)" }},
-  { "code": "SER_ACC_232", "result":0, "text": { "ja": "アカウントトークンの移行処理件数が不正でした。(更新予定件数:2件, 更新件数:%d件, SER:ACC-232)" }},
-  { "code": "SER_ACC_241", "result":0, "text": { "ja": "パスワードの設定処理で更新件数が不正でした。(USERID:%d, 更新予定件数:1件, 更新件数:%d件, SER:ACC-241)" }},
-  { "code": "SER_ACC_242", "result":0, "text": { "ja": "パスワードの設定処理で対象者のデータを取得できませんでした。(USERID:%d, SER:ACC-242)" }},
-  { "code": "SER_ACC_243", "result":0, "text": { "ja": "パスワードの設定処理で予期しない例外が発生しました。(USERID:%d, MESSAGE:%s, SER:ACC-243)" }},
-  { "code": "SER_ACC_244", "result":0, "text": { "ja": "BAN設定処理で対象者のデータを取得できませんでした。(USERID:%d, SER:ACC-244)" }},
+
+  { "code": "SER_ACC_221", "result":0, "text": { "ja": "アカウントトークンの生成処理で、試行回数の上限(%d回)を超えました。(ACC221)" }},
+
+
+
+
+
+
+
 
   { "code": "SER_RDB_101", "result":0, "text": { "ja": "データベースへの接続に失敗しました。(RDB101)\n%+v" }},
   { "code": "SER_RDB_102", "result":0, "text": { "ja": "データベースのクエリに失敗しました。(RDB102)\n%+v" }},

@@ -1,9 +1,11 @@
 package rest
 
 import (
+    "crypto/sha512"
     "fmt"
     "github.com/pkg/errors"
     "math/rand"
+    "strings"
     "time"
 
     "github.com/shimalab-jp/goliath/config"
@@ -22,6 +24,13 @@ const (
     createAccountMaxRetry      int    = 3
 )
 
+type AccountOutputInfo struct {
+    PlayerID       string
+    Password       string
+    Platform       int8
+    Token          string
+}
+
 type accountInfo struct {
     UserID         int64
     PlayerID       string
@@ -30,7 +39,15 @@ type accountInfo struct {
     Platform       int8
     Token          string
     IsBan          bool
-    isAdmin        bool
+    IsAdmin        bool
+}
+
+func (am *accountInfo) Output() (AccountOutputInfo) {
+    return AccountOutputInfo{
+        PlayerID: am.PlayerID,
+        Password: am.Password,
+        Platform: am.Platform,
+        Token: am.Token}
 }
 
 type accountManager struct{}
@@ -111,13 +128,15 @@ func (am *accountManager) generateAccountToken(con *database.Connection) (string
     for {
         count++
         rand.Seed(time.Now().UnixNano())
-        token = fmt.Sprintf(accountTokenFormat,
+        key := fmt.Sprintf(accountTokenFormat,
             rand.Int31n(0xFFFF), rand.Int31n(0xFFFF), rand.Int31n(0xFFFF),
             rand.Int31n(0xFFFF), rand.Int31n(0xFFFF),
             rand.Int31n(0x0FFF)|0x4000,
             rand.Int31n(0x3FFF)|0x8000,
             rand.Int31n(0xFFFF), rand.Int31n(0xFFFF),
             rand.Int31n(0xFFFF), rand.Int31n(0xFFFF), rand.Int31n(0xFFFF))
+
+        token = strings.ToLower(fmt.Sprintf("%x", sha512.Sum512([]byte(key))))
 
         result, err := con.Query("SELECT COUNT(*) AS `users` FROM `goliath_dat_account_token` WHERE `token` = ?;", token)
         if err != nil {
@@ -164,6 +183,17 @@ func (am *accountManager) insertAccount(con *database.Connection, playerID strin
         return 0, err
     }
     return con.LastInsertedId, nil
+}
+
+func (am *accountManager) renewPassword(con *database.Connection, userID int64, password string) (error) {
+    var sql = "UPDATE `goliath_dat_account` SET `password` = ? WHERE `user_id` = ?;"
+    var args = []interface{}{password, userID}
+
+    _, err := con.Execute(sql, args...)
+    if err != nil {
+        return err
+    }
+    return nil
 }
 
 func (am *accountManager) insertAccountToken(con *database.Connection, token string, userID int64, businessDay businessDay) (error) {
@@ -227,13 +257,23 @@ func (am *accountManager) getAccountByToken(con *database.Connection, token stri
                     return nil, err
                 }
                 account.IsBan = isBan != 0
-                account.isAdmin = isAdmin != 0
+                account.IsAdmin = isAdmin != 0
                 return &account, nil
             }
         }
     }
 
     return nil, nil
+}
+
+func (am *accountManager) GetAccountByToken(token string) (*accountInfo, error) {
+    con, err := database.Connect("goliath")
+    if err == nil {
+        defer con.Disconnect()
+        return am.getAccountByToken(con, token)
+    } else {
+        return nil, err
+    }
 }
 
 func (am *accountManager) Create(request *Request, platform int8) (*accountInfo, error) {
@@ -362,17 +402,43 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
         Platform:       platform,
         Token:          token,
         IsBan:          false,
-        isAdmin:        false}, nil
+        IsAdmin:        false}, nil
 }
 
-func (am *accountManager) GetAccountByToken(token string) (*accountInfo, error) {
-    con, err := database.Connect("goliath")
-    if err == nil {
-        defer con.Disconnect()
-        return am.getAccountByToken(con, token)
-    } else {
+func (am *accountManager) RenewPassword(token string) (*accountInfo, error) {
+    var err error
+    var con *database.Connection = nil
+    var account *accountInfo = nil
+
+    // アカウントを取得
+    account, err = am.GetAccountByToken(token)
+    if err != err {
         return nil, err
     }
+
+    // パスワード生成
+    newPassword := am.generatePassword()
+
+    // 接続
+    con, err = database.Connect("goliath")
+    if err != nil {
+        return nil, err
+    }
+
+    // 更新
+    err = am.renewPassword(con, account.UserID, newPassword)
+    if err != nil {
+        return nil, err
+    }
+
+    // 切断
+    con.Disconnect()
+
+    // 反映
+    account.Password = newPassword
+
+    // アカウントオブジェクトを返却
+    return account, nil
 }
 
 func GetAccountManager() (*accountManager) {

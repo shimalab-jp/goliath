@@ -9,7 +9,6 @@ import (
     "os"
     "path"
     "strings"
-
     "github.com/shimalab-jp/goliath/config"
     "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/rest"
@@ -77,16 +76,22 @@ func referenceHandler(w http.ResponseWriter, r *http.Request) {
         }
 
         // リファレンスデータを作成
-        ret := map[string]map[string]rest.ResourceDefine{}
+        ret := map[uint32]map[string]map[string]rest.ResourceDefine{}
 
-        for i, v := range *rest.GetEngine().GetResourceManager().GetAllResources() {
-            if v != nil && *v != nil {
-                dir, _ := path.Split((*v).Define().Path)
+        for ver, vermap := range *rest.GetEngine().GetResourceManager().GetAllResources() {
+            if _, ok := ret[ver]; !ok {
+                ret[ver] = map[string]map[string]rest.ResourceDefine{}
+            }
 
-                if group, ok := ret[dir]; ok {
-                    group[i] = *(*v).Define()
-                } else {
-                    ret[dir] = map[string]rest.ResourceDefine{i:*(*v).Define()}
+            for s, pathmap := range *vermap {
+                if pathmap != nil && *pathmap != nil {
+                    dir, _ := path.Split((*pathmap).GetPath())
+
+                    if group, ok := ret[ver][dir]; ok {
+                        group[s] = *(*pathmap).Define()
+                    } else {
+                        ret[ver][dir] = map[string]rest.ResourceDefine{s:*(*pathmap).Define()}
+                    }
                 }
             }
         }
@@ -125,8 +130,8 @@ func referenceHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func AppendResource(resource rest.IRestResource) (error) {
-    return rest.GetEngine().AppendResource(&resource)
+func AppendResource(version uint32, path string, resource rest.IRestResource) (error) {
+    return rest.GetEngine().AppendResource(version, path, &resource)
 }
 
 func SetHooks(hooks rest.ExecutionHooks) {

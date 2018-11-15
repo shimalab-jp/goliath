@@ -29,7 +29,6 @@ Go言語のパッケージが 'go' から始まるのが多いのと、先日ラ
 * エラー処理の改善
 * json 以外のフォーマットへの対応
 * URLパラメータの改修(現在のQueryString形式からパス方式へ)
-* マルチバージョン対応
 * 基本の管理ページ
 
 
@@ -75,13 +74,13 @@ $ go get github.com/shimalab-jp/goliath
 package main
 
 import (
-        "fmt"
-        "log"
-
-        "github.com/shimalab-jp/goliath"
+    "github.com/shimalab-jp/goliath"
+    "github.com/shimalab-jp/goliath/example"
+    "github.com/shimalab-jp/goliath/log"
+    "github.com/shimalab-jp/goliath/resources/v1"
+    "github.com/shimalab-jp/goliath/rest"
 )
 
-// PreExecute, PostExecute を下記の定義て実装する事により、ExecutionHooks となります。
 type ExampleHooks struct {}
 
 // APIの実行前にコールされます
@@ -106,32 +105,27 @@ func main() {
     }
 
     // [オプション]
-    // ユーザープログラムの初期化処理など、必要であればこの辺で実行しておくと良いです。
-    if err == nil {
-        // todo: user initialization
-    }
-
-    // [オプション]
-    // ユーザー定義のRESTリソースを追加してください。
-    // ※システムリソースや、ユーザーリソースとパスが被る場合は、起動時にエラーとなりますのでご注意ください。
-    if err == nil {
-        if err == nil { err = goliath.AppendResource(&ExampleResource1) }
-        if err == nil { err = goliath.AppendResource(&ExampleResource2) }
-        if err == nil { err = goliath.AppendResource(&ExampleResource3) }
-        if err == nil { err = goliath.AppendResource(&ExampleResource4) }
-        if err == nil { err = goliath.AppendResource(&ExampleResource5) }
-        if err == nil { err = goliath.AppendResource(&ExampleResource6) }
-    }
-
-    // [オプション]
     // APIの実行前、実行後に、独自の処理を行いたい場合は、
-    // ExecutionHooker を作成する事で、処理をフックする事ができます。
+    // ExecuteHookerを作成する事で、処理をフックする事ができます。
     if err == nil {
         goliath.SetHooks(&ExampleHooks{})
     }
 
     // [必須]
-    // Listenを開始してください。
+    // 公開するRESTリソースを追加してください
+    // 認証を必要としないAPIのみを公開する場合は、basic resources の account 関連は削除で。
+    if err == nil {
+        // goliath basic resources(v1)
+        if err == nil { err = goliath.AppendResource(1, "/account/regist",   &v1.AccountRegist{}) }
+        if err == nil { err = goliath.AppendResource(1, "/account/password", &v1.AccountPassword{}) }
+        if err == nil { err = goliath.AppendResource(1, "/account/trans",    &v1.AccountTrans{}) }
+        if err == nil { err = goliath.AppendResource(1, "/debug/cache",      &v1.DebugCache{}) }
+
+        // user defined resources(v1)
+        if err == nil { err = goliath.AppendResource(1, "/example/example1", &example.Example1{}) }
+    }
+
+    // [必須] httpサーバーのListenを開始
     if err == nil {
         err = goliath.Listen()
     }

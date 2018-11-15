@@ -6,9 +6,6 @@ import (
     "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
     "github.com/shimalab-jp/goliath/rest"
-    "github.com/shimalab-jp/goliath/rest/resources/account"
-    "github.com/shimalab-jp/goliath/rest/resources/debug"
-    "github.com/shimalab-jp/goliath/rest/resources/fcm"
     "strings"
 )
 
@@ -150,7 +147,7 @@ func initDatabase() (error) {
 
     if err == nil {
         _, err = con.Execute("CREATE TABLE IF NOT EXISTS `goliath_dat_account_token` (" +
-            "`token` varchar(256) CHARACTER SET ascii NOT NULL," +
+            "`token` varchar(512) CHARACTER SET ascii NOT NULL," +
             "`user_id` bigint(20) unsigned NOT NULL," +
             "`is_valid` tinyint(1) unsigned NOT NULL," +
             "`regist_month` int(10) unsigned NOT NULL COMMENT 'yyyymm'," +
@@ -277,19 +274,6 @@ func initDatabase() (error) {
     return err
 }
 
-func appendBasicResources() (error) {
-    var err error = nil
-
-    if err == nil { err = AppendResource(&account.Regist{}) }
-    if err == nil { err = AppendResource(&account.Auth{}) }
-    if err == nil { err = AppendResource(&account.Password{}) }
-    if err == nil { err = AppendResource(&account.Trans{}) }
-    if err == nil { err = AppendResource(&fcm.Regist{}) }
-    if err == nil { err = AppendResource(&debug.Cache{}) }
-
-    return err
-}
-
 func Initialize(configPath string) (error) {
     var err error = nil
 
@@ -317,11 +301,6 @@ func Initialize(configPath string) (error) {
     // エンジンを初期化
     if err == nil {
         rest.InitializeEngine()
-    }
-
-    // 標準リソースを追加
-    if err == nil {
-        err = appendBasicResources()
     }
 
     return err

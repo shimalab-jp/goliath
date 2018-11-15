@@ -1,17 +1,16 @@
-package account
+package v1
 
 import (
     "github.com/shimalab-jp/goliath/rest"
     "reflect"
 )
 
-type Password struct {
+type AccountPassword struct {
     rest.ResourceBase
 }
 
-func (res Password) Define() (*rest.ResourceDefine) {
+func (res AccountPassword) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/account/password",
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "パスワードリセット",
@@ -27,6 +26,15 @@ func (res Password) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res Password) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountPassword) Post(request *rest.Request, response *rest.Response) (error) {
+    // アカウントを作成
+    am := rest.GetAccountManager()
+    account, err := am.RenewPassword(request.Account.Token)
+    if err != nil {
+        return err
+    }
+
+    // 戻り値に値をセット
+    response.Result = map[string]interface{}{ "AccountInfo": account.Output() }
     return nil
 }

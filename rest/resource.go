@@ -51,7 +51,6 @@ type ResourceMethodDefine struct {
 }
 
 type ResourceDefine struct {
-    Path    string
     Methods map[string]ResourceMethodDefine
 }
 
@@ -61,9 +60,16 @@ type IRestResource interface {
     Post(request *Request, response *Response) (error)
     Delete(request *Request, response *Response) (error)
     Put(request *Request, response *Response) (error)
+    SetVersion(version uint32)
+    GetVersion() (uint32)
+    SetPath(path string)
+    GetPath() (string)
 }
 
-type ResourceBase struct{}
+type ResourceBase struct {
+    version uint32
+    path    string
+}
 
 func (res *ResourceBase) Define() (*ResourceDefine) {
     return &ResourceDefine{Methods: map[string]ResourceMethodDefine{}}
@@ -93,36 +99,60 @@ func (res *ResourceBase) Put(request *Request, response *Response) (error) {
     return nil
 }
 
+func (res *ResourceBase) SetVersion(version uint32) {
+    res.version = version
+}
+
+func (res *ResourceBase) GetVersion() (uint32) {
+    return res.version
+}
+
+func (res *ResourceBase) SetPath(path string) {
+    res.path = path
+}
+
+func (res *ResourceBase) GetPath() (string) {
+    return res.path
+}
+
+
+
+
+
+
+
+
 type resourceManager struct {
     resourceMutex *sync.Mutex
-    resources     *map[string]*IRestResource
+    resources     *map[uint32]*map[string]*IRestResource
 }
 
 func createResourceManager() (*resourceManager) {
     return &resourceManager{
         resourceMutex: &sync.Mutex{},
-        resources:     &map[string]*IRestResource{}}
+        resources:     &map[uint32]*map[string]*IRestResource{}}
 }
 
 func (resManager *resourceManager) initialize() {
 
 }
 
-func (resManager *resourceManager) FindResource(path string) (*IRestResource) {
+func (resManager *resourceManager) FindResource(version uint32, path string) (*IRestResource) {
     findPath := "/" + strings.TrimLeft(path, "/")
 
+    var ret *IRestResource = nil
     resManager.resourceMutex.Lock()
-    ret, ok := (*resManager.resources)[findPath]
+    if ver, ok := (*resManager.resources)[version]; ok {
+        if res, ok := (*ver)[findPath]; ok {
+            ret = res
+        }
+    }
     resManager.resourceMutex.Unlock()
 
-    if ok {
-        return ret
-    } else {
-        return nil
-    }
+    return ret
 }
 
-func (resManager *resourceManager) Append(resource *IRestResource) (error) {
+func (resManager *resourceManager) Append(version uint32, path string, resource *IRestResource) (error) {
     var err error = nil
 
     if resource == nil {
@@ -130,16 +160,24 @@ func (resManager *resourceManager) Append(resource *IRestResource) (error) {
     } else {
         resManager.resourceMutex.Lock()
 
-        path := (*resource).Define().Path
         findPath := strings.ToLower("/" + strings.TrimLeft(path, "/"))
-        if _, ok := (*resManager.resources)[findPath]; !ok {
-            (*resManager.resources)[findPath] = resource
-            define := (*resource).Define()
-            for method := range (*define).Methods {
-                log.D("[ResourceManager] Append resource %s:%s", strings.ToUpper(method), findPath)
+
+        if ver, ok := (*resManager.resources)[version]; ok {
+            if _, ok := (*ver)[findPath]; !ok {
+                (*ver)[findPath] = resource
+                define := (*resource).Define()
+                for method := range (*define).Methods {
+                    log.D("[ResourceManager] Append resource %s:%s", strings.ToUpper(method), findPath)
+                }
+                (*resource).SetVersion(version)
+                (*resource).SetPath(findPath)
+            } else {
+                err = errors.New(fmt.Sprintf("path '%s' is duplicated.", path))
             }
         } else {
-            err = errors.New(fmt.Sprintf("path '%s' is duplicated.", path))
+            (*resManager.resources)[version] = &map[string]*IRestResource{findPath: resource}
+            (*resource).SetVersion(version)
+            (*resource).SetPath(findPath)
         }
 
         resManager.resourceMutex.Unlock()
@@ -148,6 +186,6 @@ func (resManager *resourceManager) Append(resource *IRestResource) (error) {
     return err
 }
 
-func (resManager *resourceManager) GetAllResources() (*map[string]*IRestResource) {
+func (resManager *resourceManager) GetAllResources() (*map[uint32]*map[string]*IRestResource) {
     return resManager.resources
 }

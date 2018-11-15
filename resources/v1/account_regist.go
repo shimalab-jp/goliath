@@ -1,17 +1,17 @@
-package account
+package v1
 
 import (
     "github.com/shimalab-jp/goliath/rest"
     "reflect"
+    "strconv"
 )
 
-type Regist struct {
+type AccountRegist struct {
     rest.ResourceBase
 }
 
-func (res Regist) Define() (*rest.ResourceDefine) {
+func (res AccountRegist) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/account/regist",
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
                 Summary:       "アカウント登録",
@@ -23,7 +23,7 @@ func (res Regist) Define() (*rest.ResourceDefine) {
                         Default:     rest.PlatformNone,
                         Select:      []interface{}{rest.PlatformNone, rest.PlatformApple, rest.PlatformGoogle},
                         Require:     true,
-                        Description: "プラットフォーム。" + string(rest.PlatformNone) + ":None, " + string(rest.PlatformApple) + ":Apple, " + string(rest.PlatformGoogle) + ":Google"}},
+                        Description: "プラットフォーム。" + strconv.Itoa(rest.PlatformNone) + ":None, " + strconv.Itoa(rest.PlatformApple) + ":Apple, " + strconv.Itoa(rest.PlatformGoogle) + ":Google"}},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
@@ -33,7 +33,7 @@ func (res Regist) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res Regist) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountRegist) Post(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
     platform := request.GetPostInt8("Platform", rest.PlatformNone)
 
@@ -45,7 +45,7 @@ func (res Regist) Post(request *rest.Request, response *rest.Response) (error) {
     }
 
     // 戻り値に値をセット
-    response.Result = map[string]interface{}{ "AccountInfo": account }
+    response.Result = map[string]interface{}{ "AccountInfo": account.Output() }
 
     return nil
 }

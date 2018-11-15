@@ -17,13 +17,20 @@ type Example1 struct {
 // APIの実行前に REST エンジン側でチェックし、自動的に不正なパラメータを防ぎます。
 func (res Example1) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/example/diff",
         Methods: map[string]rest.ResourceMethodDefine{
-            "POST": {
+            "GET": {
                 Summary:       "減算",
                 Description:   "減算します",
                 UrlParameters: []rest.UrlParameter{},
-                PostParameters: map[string]rest.PostParameter{},
+                PostParameters: map[string]rest.PostParameter{
+                    "Value1": {
+                        Type:        reflect.Int32,
+                        Description: "左の値",
+                        Require:     true},
+                    "Value2": {
+                        Type:        reflect.Int32,
+                        Description: "右の値",
+                        Require:     true}},
                 Returns: map[string]rest.Return{
                     "Result": {
                         Type:        reflect.Int32,
@@ -37,7 +44,7 @@ func (res Example1) Define() (*rest.ResourceDefine) {
 // 今回はPOSTなので、Postを実装します。
 // パラメータは、 request の Get〜メソッドで取得する事ができます。
 // 結果は response の Result に格納してください。
-func (res Example1) Post(request *rest.Request, response *rest.Response) (error) {
+func (res Example1) Get(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
     v1 := request.GetPostInt32("Value1", 0)
     v2 := request.GetPostInt32("Value2", 0)

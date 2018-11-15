@@ -555,7 +555,10 @@
 
                 if (!data || !data.ResultCode) return;
 
-                // todo: アカウントトークンを記憶
+                // アカウントトークンを記憶
+                if (data.Result["AccountInfo"] && data.Result.AccountInfo["Token"]) {
+                    $.cookie("account_token", data.Result.AccountInfo.Token, {expires:30,secure:false});
+                }
 
                 // UserAgentを記憶
                 $.cookie("user_agent", document.getElementById("user_agent").value, {expires:30,secure:false});

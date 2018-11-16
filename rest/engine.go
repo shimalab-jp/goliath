@@ -250,7 +250,7 @@ func (e *Engine) checkClientVersion(request *Request, response *Response) (bool)
         rv, err := cv.GetUpdateRequireVersion()
         if err != nil {
             // 稼働中のバージョン番号一覧の取得に失敗した場合
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RST_201", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RST_201", err)
         }
 
         if rv != nil {
@@ -302,7 +302,7 @@ func (e *Engine) checkToken(request *Request, response *Response) (bool) {
         account, err := GetAccountManager().GetAccountByToken(token)
         if err != nil {
             log.Ee(err)
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RST_222", request.Name, token, err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RST_222", request.Name, token, err)
             return false
         }
 
@@ -334,13 +334,13 @@ func (e *Engine) checkBan(request *Request, response *Response) (bool) {
 func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
     con, err := database.Connect("goliath")
     if err != nil {
-        response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_101", err)
+        response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_101", err)
         return false
     }
 
     result, err := con.Query("SELECT `enable` FROM `goliath_mst_api_switch` WHERE `api_name` = ?", (*request.Resource).GetPath())
     if err != nil {
-        response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_102", err)
+        response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_102", err)
         return false
     }
 
@@ -357,7 +357,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
     } else {
         _, err := con.Execute("INSERT INTO `goliath_mst_api_switch` (`api_name`, `enable`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `enable` = ?;", (*request.Resource).GetPath(), 1, 1)
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_103", err)
             return false
         }
         return true
@@ -379,14 +379,14 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
 
     con, err := database.Connect("goliath")
     if err != nil {
-        response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_101", err)
+        response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_101", err)
         return false
     }
 
     now := time.Now().Unix()
     result, err := con.Query("SELECT `start_time`, `end_time`, `subject`, `body` FROM `goliath_mst_maintenance` WHERE (`start_time` <= ? AND ? <= `end_time`) OR `start_time` >= ? LIMIT 1;", now, now, now)
     if err != nil {
-        response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_102", err)
+        response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_102", err)
         return false
     }
 
@@ -634,21 +634,21 @@ func (e *Engine) updateLastAccess(request *Request, response *Response) {
     if err == nil {
         con, err = database.Connect("goliath")
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_101", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_101", err)
         }
     }
 
     if err == nil {
         err = con.BeginTransaction()
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_104", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_104", err)
         }
     }
 
     if err == nil {
         _, err = con.Execute("REPLACE INTO `goliath_dat_account` (`last_access`) VALUES (?);", time.Now().UnixNano())
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_103", err)
         }
     }
 
@@ -660,19 +660,19 @@ func (e *Engine) updateLastAccess(request *Request, response *Response) {
             request.Account.UserID,
             request.Account.Platform)
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_103", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_103", err)
         }
     }
 
     if err == nil {
         err = con.Commit()
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_105", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_105", err)
         }
     } else {
         err = con.Rollback()
         if err != nil {
-            response.SetSystemErrorMessage("ERR_CMN_101", []interface{}{}, "SER_RDB_106", err)
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_106", err)
         }
     }
 
@@ -860,57 +860,47 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
     }
 
     // 実行
-    if response.ResultCode == ResultOK {
+    if err == nil && response.ResultCode == ResultOK {
         // ユーザー定義の実行前処理を実行
-        if e.hooks != nil && (*e.hooks) != nil {
+        if err == nil && e.hooks != nil && (*e.hooks) != nil {
             st := time.Now().UnixNano()
             err = (*e.hooks).PreExecute(e, request, response)
-            if err != nil {
-                log.Ee(err)
-            }
             response.Times["T500_PRE_EXEC"] = time.Now().UnixNano() - st
         }
 
         // API実行
-        st := time.Now().UnixNano()
-        switch request.Method {
-        case "GET":
-            err = (*request.Resource).Get(request, response)
-            if err != nil {
-                log.Ee(err)
+        if err == nil {
+            st := time.Now().UnixNano()
+            switch request.Method {
+            case "GET":
+                err = (*request.Resource).Get(request, response)
+                break
+            case "POST":
+                err = (*request.Resource).Post(request, response)
+                break
+            case "PUT":
+                err = (*request.Resource).Put(request, response)
+                break
+            case "DELETE":
+                err = (*request.Resource).Delete(request, response)
+                break
+            default:
+                response.StatusCode = http.StatusMethodNotAllowed
+                response.ResultCode = ResultNotImplemented
             }
-            break
-        case "POST":
-            err = (*request.Resource).Post(request, response)
-            if err != nil {
-                log.Ee(err)
-            }
-            break
-        case "PUT":
-            err = (*request.Resource).Put(request, response)
-            if err != nil {
-                log.Ee(err)
-            }
-            break
-        case "DELETE":
-            err = (*request.Resource).Delete(request, response)
-            if err != nil {
-                log.Ee(err)
-            }
-            break
-        default:
-            return errors.New(fmt.Sprintf("%s is unsupported method", request.Method))
+            response.Times["T510_EXEC"] = time.Now().UnixNano() - st
         }
-        response.Times["T510_EXEC"] = time.Now().UnixNano() - st
 
         // ユーザー定義の実行後処理を実行
-        if e.hooks != nil {
+        if err == nil && e.hooks != nil {
             st := time.Now().UnixNano()
             err = (*e.hooks).PostExecute(e, request, response)
-            if err != nil {
-                log.Ee(err)
-            }
             response.Times["T520_POST_EXEC"] = time.Now().UnixNano() - st
+        }
+
+        // エラーの場合
+        if err != nil {
+            response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RST_231", err)
         }
     }
 

@@ -1,7 +1,7 @@
 [
   { "code": "INI_TXT_001", "result":0, "text": { "ja": "初期化用メッセージ" }},
 
-  { "code": "ERR_CMN_101", "result":500, "text": { "ja": "ご迷惑をおかけし申し訳ありません。\nサーバーでの処理中にエラーが発生した為処理を中断しました。(CMN101)" }},
+  { "code": "ERR_RES_100", "result":500, "text": { "ja": "ご迷惑をおかけし申し訳ありません。\nサーバーでの処理中にエラーが発生した為処理を中断しました。(RES100)" }},
   { "code": "ERR_RES_101", "result":400, "text": { "ja": "パラメータ'%s'は、必須パラメータです。(RES101)" }},
   { "code": "ERR_RES_102", "result":400, "text": { "ja": "パラメータ'%s'は、%s型に変換できる値を渡してください。(RES102)" }},
   { "code": "ERR_RES_103", "result":400, "text": { "ja": "パラメータ'%s'は、%v〜%vの範囲で渡してください。(RES103)" }},
@@ -19,6 +19,7 @@
   { "code": "SER_RST_201", "result":0, "text": { "ja": "クライアントバージョン情報の取得に失敗しました。(RST201)\n%+v" }},
   { "code": "SER_RST_221", "result":0, "text": { "ja": "不正なアカウントトークンを検知しました。API:%s, TOKEN:%s (RST221)" }},
   { "code": "SER_RST_222", "result":0, "text": { "ja": "アカウントの取得処理に失敗しました。API:%s, TOKEN:%s (RST222)\n%+v" }},
+  { "code": "SER_RST_231", "result":0, "text": { "ja": "API実行中にエラーが発生しました。(RST231)\n%+v" }},
 
 
 

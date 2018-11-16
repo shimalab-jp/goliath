@@ -179,9 +179,11 @@ func (am *accountManager) renewPassword(con *database.Connection, userID int64, 
     var sql = "UPDATE `goliath_dat_account` SET `password` = ? WHERE `user_id` = ?;"
     var args = []interface{}{password, userID}
 
-    _, err := con.Execute(sql, args...)
+    cnt, err := con.Execute(sql, args...)
     if err != nil {
         return err
+    } else if cnt != 1 {
+        return errors.New(fmt.Sprintf("Invalid affected count %d/1.", cnt))
     }
     return nil
 }

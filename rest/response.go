@@ -84,7 +84,7 @@ func (response *Response) SetSystemErrorMessage(messageCode string, arg1 []inter
     response.ErrorMessage = errorMessage
     response.ErrorCode = messageCode
     response.ResultCode = resultCode
-    debugMessage := response.MessageManager.Get(messageCode, arg2...)
+    debugMessage := response.MessageManager.Get(debugMessageCode, arg2...)
     response.DebugMessage = debugMessage
 }
 

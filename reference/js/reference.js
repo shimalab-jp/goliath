@@ -680,6 +680,7 @@
                 html += '</table>';
                 html += '<div class="notice">Goliathでは、クライアントのバージョンチェックをUserAgentにて行っています。';
                 html += '<div class="notice">正しいUserAgentを指定していない場合は、不正なクライアントとしてアクセス拒否される場合がありますので、クライアント側はconfigに定義したパターンのUserAgentを指定してください。</div>';
+                html += '<div class="notice">※UserAgentの変更が出来ないクライアントの場合は、ヘッダに \'<strong class="orange">X-Goliath-User-Agent</strong>\' という名前でUserAgentを指定してください。</div>';
                 html += '</div>';
             }
 

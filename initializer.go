@@ -92,6 +92,11 @@ func initDatabase() (error) {
                 log.E("[INITDB] DROP FAILED `goliath_mst_maintenance` table.")
             }
         }
+
+        if err == nil {
+            mem := rest.Memcached{}
+            err = mem.Flush()
+        }
     }
 
     if err == nil {

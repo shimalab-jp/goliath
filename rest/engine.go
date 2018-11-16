@@ -312,7 +312,7 @@ func (e *Engine) checkToken(request *Request, response *Response) (bool) {
         // 認証を要求されている場合で、アカウントを取得できなかった場合はエラーとする
         if request.Account == nil {
             if request.MethodInfo.RequireAuthentication {
-                response.SetErrorMessage("ERR_RES_122", request.Name, token)
+                response.SetSystemErrorMessage("ERR_RES_122", []interface{}{}, "SER_RST_221", request.Name, token)
                 return false
             }
         } else {

@@ -7,7 +7,6 @@ import (
     "github.com/shimalab-jp/goliath/config"
 )
 
-
 type Memcached struct {
     instance *memcache.Client
 }
@@ -72,4 +71,15 @@ func (mem *Memcached) Delete(key string) (error) {
     }
 
     return mem.instance.Delete(mem.createKey(key))
+}
+
+func (mem *Memcached) Flush() (error) {
+    if mem.instance == nil {
+        mem.open()
+    }
+    if mem.instance == nil {
+        return nil
+    }
+
+    return mem.instance.FlushAll()
 }

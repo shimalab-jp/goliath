@@ -23,5 +23,6 @@ func (res DebugCache) Define() (*rest.ResourceDefine) {
 }
 
 func (res DebugCache) Delete(request *rest.Request, response *rest.Response) (error) {
-    return nil
+    mem := rest.Memcached{}
+    return mem.Flush()
 }

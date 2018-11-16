@@ -63,18 +63,12 @@ func (am *accountManager) countTotalUsers(con *database.Connection) (int64, erro
     if err != nil {
         return 0, err
     }
-    defer result.Rows.Close()
 
-    var users int64 = 0
-    for result.Rows.Next() {
-        err := result.Rows.Scan(&users)
-        if err != nil {
-            return 0, err
-        }
-        break
+    if result.MoveFirst() {
+        return result.GetInt64("users", 0), nil
     }
 
-    return users, nil
+    return 0, nil
 }
 
 func (am *accountManager) generatePlayerId(con *database.Connection) (string, error) {
@@ -90,16 +84,11 @@ func (am *accountManager) generatePlayerId(con *database.Connection) (string, er
             log.We(err)
             playerID = ""
         } else {
-            for result.Rows.Next() {
-                var users = 0
-                err := result.Rows.Scan(&users)
-                if err != nil {
-                    log.We(err)
-                    playerID = ""
-                }
-                break
+            if !result.MoveFirst() {
+                playerID = ""
+            } else if result.GetUInt64("users", 0) > 0 {
+                playerID = ""
             }
-            result.Rows.Close()
         }
 
         if len(playerID) > 0 {
@@ -149,16 +138,11 @@ func (am *accountManager) generateAccountToken(con *database.Connection) (string
             log.We(err)
             token = ""
         } else {
-            for result.Rows.Next() {
-                var users = 0
-                err := result.Rows.Scan(&users)
-                if err != nil {
-                    log.We(err)
-                    token = ""
-                }
-                break
+            if !result.MoveFirst() {
+                token = ""
+            } else if result.GetUInt64("users", 0) > 0 {
+                token = ""
             }
-            result.Rows.Close()
         }
 
         if len(token) > 0 {
@@ -286,12 +270,8 @@ func (am *accountManager) getAccountByToken(con *database.Connection, token stri
         var sql = "SELECT `user_id` FROM `goliath_dat_account_token` WHERE `token` = ? AND is_valid = 1;"
         result, err := con.Query(sql, token)
         if err == nil {
-            defer result.Rows.Close()
-            for result.Rows.Next() {
-                err := result.Rows.Scan(&userID)
-                if err != nil {
-                    return nil, err
-                }
+            if result.MoveFirst() {
+                userID = result.GetInt64("user_id", 0)
             }
         }
 
@@ -310,16 +290,13 @@ func (am *accountManager) getAccountByToken(con *database.Connection, token stri
         var sql = "SELECT `player_id`, `password`, `database_number`, `platform`, `is_ban`, `is_admin` FROM `goliath_dat_account` WHERE `user_id` = ?;"
         result, err := con.Query(sql, userID)
         if err == nil {
-            defer result.Rows.Close()
-            for result.Rows.Next() {
-                var isBan, isAdmin int8
-                err := result.Rows.Scan(&account.PlayerID, &account.Password, &account.DatabaseNumber, &account.Platform, &isBan, &isAdmin)
-                if err != nil {
-                    return nil, err
-                }
-                account.IsBan = isBan != 0
-                account.IsAdmin = isAdmin != 0
-                return &account, nil
+            if result.MoveFirst() {
+                account.PlayerID = result.GetString("player_id", "")
+                account.Password = result.GetString("password", "")
+                account.DatabaseNumber = result.GetInt8("database_number", 0)
+                account.Platform = result.GetInt8("platform", 0)
+                account.IsBan = result.GetBoolean("is_ban", false)
+                account.IsAdmin = result.GetBoolean("is_admin", false)
             }
         }
     }

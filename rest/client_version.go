@@ -101,29 +101,35 @@ func (cv *ClientVersion) GetRequireVersions() (ClientVersions, error) {
         if err != nil {
             return nil, err
         }
-        defer result.Rows.Close()
 
-        for result.Rows.Next() {
-            var platform uint8
-            var major, minor, revision uint32
-            var resVersion string
+        if result.MoveFirst() {
+            for !result.EoF() {
+                platform := result.GetUInt8("platform", 0)
+                major := result.GetUInt32("major", 0)
+                minor := result.GetUInt32("minor", 0)
+                revision := result.GetUInt32("revision", 0)
+                resVersion := result.GetString("resource_version", "")
 
-            result.Rows.Scan(&platform, &major, &minor, &revision, &resVersion)
+                platformStr := "PC"
+                if platform == PlatformApple {
+                    platformStr = "iOS"
+                } else if platform == PlatformGoogle {
+                    platformStr = "Android"
+                }
 
-            platformStr := "PC"
-            if platform == PlatformApple {
-                platformStr = "iOS"
-            } else if platform == PlatformGoogle {
-                platformStr = "Android"
+                ret = append(ret, ClientVersion{
+                    major: major,
+                    minor: minor,
+                    revision: revision,
+                    resourceVersion: resVersion,
+                    platform: platformStr})
+
+                if !result.MoveNext() {
+                    break
+                }
             }
-
-            ret = append(ret, ClientVersion{
-                major: major,
-                minor: minor,
-                revision: revision,
-                resourceVersion: resVersion,
-                platform: platformStr})
         }
+
 
         sort.Sort(ret)
     }

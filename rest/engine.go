@@ -345,12 +345,9 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
     }
 
     enable := -1
-    for result.Rows.Next() {
-        result.Rows.Scan(&enable)
-        break
+    if result.MoveFirst() {
+        enable = result.GetInt("enable", enable)
     }
-
-    result.Rows.Close()
 
     if enable == 1 {
         return true
@@ -393,18 +390,17 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
         return false
     }
 
-    for result.Rows.Next() {
-        var startTime, endTime int64
-        var subject, body string
-        err := result.Rows.Scan(&startTime, &endTime, &subject, &body)
-        if err == nil {
-            response.MaintenanceInfo = MaintenanceInfo{
-                StartTime: startTime,
-                EndTime:   endTime,
-                Subject:   subject,
-                Body:      body}
-        }
-        break
+    if result.MoveFirst() {
+        startTime := result.GetInt64("start_time", 0)
+        endTime := result.GetInt64("end_time", 0)
+        subject := result.GetString("subject", "")
+        body := result.GetString("body", "")
+
+        response.MaintenanceInfo = MaintenanceInfo{
+            StartTime: startTime,
+            EndTime:   endTime,
+            Subject:   subject,
+            Body:      body}
     }
 
     if response.MaintenanceInfo.StartTime <= now && now <= response.MaintenanceInfo.EndTime {

@@ -556,7 +556,7 @@
                 if (!data || !data.ResultCode) return;
 
                 // アカウントトークンを記憶
-                if (data.Result && data.Result.AccountInfo && data.Result.AccountInfo.Toke) {
+                if (data.Result && data.Result.AccountInfo && data.Result.AccountInfo.Token) {
                     $.cookie("account_token", data.Result.AccountInfo.Token, {expires:30,secure:false});
                 }
 

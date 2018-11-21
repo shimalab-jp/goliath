@@ -492,12 +492,25 @@
             return JSON.stringify(reference.get_parameters("post_params"));
         },
 
+        create_query_message: function() {
+            let url = "";
+            let params = reference.get_parameters("query_params");
+            if (Object.keys(params).length > 0) {
+                url = "?";
+                for (let i = 0; i < Object.keys(params).length; i++) {
+                    if (i > 0) url += "&";
+                    url += encodeURIComponent(Object.keys(params)[i]) + "=" + encodeURIComponent(params[Object.keys(params)[i]]);
+                }
+            }
+            return url;
+        },
+
         create_url_message: function() {
             let url = "";
             let params = reference.get_parameters("url_params");
             if (Object.keys(params).length > 0) {
                 for (let i = 0; i < Object.keys(params).length; i++) {
-                    url += "/" + params["" + i];
+                    url += "/" + encodeURIComponent(params["" + i]);
                 }
             }
             return url;
@@ -543,8 +556,11 @@
             // URL取得
             let url = $("#url").val();
 
-            // TODO: urlパラメータ対応
+            // urlパラメータを取得
             url += reference.create_url_message();
+
+            // Queryパラメータを取得
+            url += reference.create_query_message();
 
             // POSTメッセージを取得
             let post_message = null;

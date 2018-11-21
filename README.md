@@ -124,8 +124,10 @@ func main() {
         if err == nil { err = goliath.AppendResource(1, "/account/trans",    &v1.AccountTrans{}) }
         if err == nil { err = goliath.AppendResource(1, "/debug/cache",      &v1.DebugCache{}) }
 
-        // user defined resources(v1)
+        // example resources(v1)
         if err == nil { err = goliath.AppendResource(1, "/example/example1", &example.Example1{}) }
+        if err == nil { err = goliath.AppendResource(1, "/example/example2", &example.Example2{}) }
+        if err == nil { err = goliath.AppendResource(1, "/example/example3", &example.Example3{}) }
     }
 
     // [必須] httpサーバーのListenを開始
@@ -161,13 +163,25 @@ type Example1 struct {
 // APIの実行前に REST エンジン側でチェックし、自動的に不正なパラメータを防ぎます。
 func (res Example1) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
-        Path:    "/example/diff",
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
-                Summary:       "減算",
-                Description:   "減算します",
-                UrlParameters: []rest.UrlParameter{},
-                PostParameters: map[string]rest.PostParameter{},
+                Summary:         "減算(PostParameters版)",
+                Description: "PostParametersでパラメータを受け取り、減算します。\n" +
+                    "PostParametersは、以下の特徴があります。\n" +
+                    "* jsonで送信するので、jsonで表現できる配列や構造体を送信する事ができます。\n" +
+                    "* 大きなサイズのメッセージを送る事ができます。\n" +
+                    "* POST送信なので、一般的なWebサーバーでは送信内容はログに残りません。\n",
+                UrlParameters:   []rest.UrlParameter{},
+                QueryParameters: map[string]rest.QueryParameter{},
+                PostParameters: map[string]rest.PostParameter{
+                    "Value1": {
+                        Type:        reflect.Int32,
+                        Description: "左の値",
+                        Require:     true},
+                    "Value2": {
+                        Type:        reflect.Int32,
+                        Description: "右の値",
+                        Require:     true}},
                 Returns: map[string]rest.Return{
                     "Result": {
                         Type:        reflect.Int32,
@@ -183,8 +197,8 @@ func (res Example1) Define() (*rest.ResourceDefine) {
 // 結果は response の Result に格納してください。
 func (res Example1) Post(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
-    v1 := request.GetPostInt32("Value1", 0)
-    v2 := request.GetPostInt32("Value2", 0)
+    v1, _ := request.GetParamInt32(rest.PostParam, "Value1", 0)
+    v2, _ := request.GetParamInt32(rest.PostParam, "Value2", 0)
 
     // 処理
     result := v1 - v2
@@ -197,9 +211,139 @@ func (res Example1) Post(request *rest.Request, response *rest.Response) (error)
 ```
 
 ### exmaple2.go
+GET処理 実装例1
 ```Go
+package example
+
+import (
+    "github.com/shimalab-jp/goliath/rest"
+    "reflect"
+)
+
+// API用の構造体を作成します
+type Example2 struct {
+    // ResourceBaseを引き継ぐと実装が楽です
+    rest.ResourceBase
+}
+
+func (res Example2) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
+            "GET": {
+                Summary: "減算(UrlParameters版)",
+                Description: "UrlParametersでパラメータを受け取り、減算します。\n" +
+                    "UrlParametersは、以下の特徴があります。\n" +
+                    "* 名前ではなく、「API名の後の何番目(Index)の引数」という形式で取得します。\n" +
+                    "* Indexは0から順に割り振られます。\n" +
+                    "* このAPI例では、GETにて /example/example2/5/3 というアクセスを行うと、5 - 3 が処理され、2が返ります。\n" +
+                    "* Requireは最後のIndexの値だけを指定する事が可能です。\n" +
+                    "* また、最後のIndexの値には IsMultiple を指定する事ができます。\nIsMultiple をtrueに設定すると/example/example2/5/3/1/1 様に最後のパラメータを複数指定出来るようになります。\n" +
+                    "* UrlParameters を定義しない場合は、値の妥当性チェックはされませんが、実行時に取得する事ができます。\n\n" +
+                    "なお、現在リファレンス上では IsMultiple パラメータの入力には対応していません。",
+                UrlParameters: []rest.UrlParameter{
+                    {
+                        Type:        reflect.Int32,
+                        Description: "左の値",
+                        Require:     true},
+                    {
+                        Type:        reflect.Int32,
+                        Description: "右の値",
+                        Require:     true,
+                        IsMultiple:  true}},
+                QueryParameters: map[string]rest.QueryParameter{},
+                PostParameters: map[string]rest.PostParameter{},
+                Returns: map[string]rest.Return{
+                    "Result": {
+                        Type:        reflect.Int32,
+                        Description: "減算結果"}},
+                RequireAuthentication: false,
+                IsDebugModeOnly:       false,
+                RunInMaintenance:      false}}}
+}
+
+func (res Example2) Get(request *rest.Request, response *rest.Response) (error) {
+    var result int32
+    var val int32
+    var next = true
+    var index = 0
+
+    // パラメータを取得しつつ計算
+    result, next = request.GetUrlParamInt32(index, 0)
+    for next {
+        index++
+        val, next = request.GetUrlParamInt32(index, 0)
+        if next {
+            result -= val
+        }
+    }
+
+    // 戻り値に値をセット
+    response.Result = map[string]interface{}{"Result": result}
+
+    return nil
+}
 ```
 
+### exmaple3.go
+GET処理 実装例2
+```Go
+package example
+
+import (
+    "github.com/shimalab-jp/goliath/rest"
+    "reflect"
+)
+
+// API用の構造体を作成します
+type Example3 struct {
+    // ResourceBaseを引き継ぐと実装が楽です
+    rest.ResourceBase
+}
+
+func (res Example3) Define() (*rest.ResourceDefine) {
+    return &rest.ResourceDefine{
+        Methods: map[string]rest.ResourceMethodDefine{
+            "GET": {
+                Summary: "減算(QueryParameters版)",
+                Description: "QueryParametersでパラメータを受け取り、減算します。\n" +
+                    "QueryParametersは、以下の特徴があります。\n" +
+                    "* POSTと同じ様に名前で値を取得します。\n" +
+                    "* パラメータがURLに含まれるので、多くのWebサーバーのログに残ります。\n" +
+                    "* URLでパラメータを渡すので、複雑だったり大きなデータ送信には向きません。\n",
+                UrlParameters: []rest.UrlParameter{},
+                QueryParameters: map[string]rest.QueryParameter{
+                    "Value1": {
+                        Type:        reflect.Int32,
+                        Description: "左の値",
+                        Require:     true},
+                    "Value2": {
+                        Type:        reflect.Int32,
+                        Description: "右の値",
+                        Require:     true}},
+                PostParameters: map[string]rest.PostParameter{},
+                Returns: map[string]rest.Return{
+                    "Result": {
+                        Type:        reflect.Int32,
+                        Description: "減算結果"}},
+                RequireAuthentication: false,
+                IsDebugModeOnly:       false,
+                RunInMaintenance:      false}}}
+}
+
+func (res Example3) Get(request *rest.Request, response *rest.Response) (error) {
+    // パラメータを取得
+    v1, _ := request.GetParamInt32(rest.QueryParam, "Value1", 0)
+    v2, _ := request.GetParamInt32(rest.QueryParam, "Value2", 0)
+
+    // 処理
+    result := v1 - v2
+
+    // 戻り値に値をセット
+    response.Result = map[string]interface{}{"Result": result}
+
+    return nil
+}
+```
 
 ライセンス
 --------

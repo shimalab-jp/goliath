@@ -10,8 +10,8 @@ body { margin:0; padding:0; }
 h1 {
 	padding-left: 5px;
 	margin-bottom: 3px;
-	border-left: 5px solid #555555;
-	border-bottom: 1px solid #555555;
+	border-left: 5px solid #dddddd;
+	border-bottom: 1px solid #999999;
 	font-size: 18pt;
 	font-weight: bold;
 }
@@ -137,7 +137,7 @@ strong.green  { color: lightgreen; }
 	width:270px;
 	position:absolute;
 	background-color:#494949;
-    overflow:scroll;
+
 
     /*box-shadow: 2px 2px 5px #222;*/
     /*-moz-box-shadow: 2px 2px 5px #222;*/ /* Firefox用*/

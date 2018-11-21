@@ -432,10 +432,11 @@
         },
 
         /**
-         * テストフォーム POSTデータを
-         * @returns {*|string}
+         * テストフォーム 入力されたパラメータを取得します。
+         * @param base_name 取得する基本名
+         * @returns object
          */
-        create_post_message: function() {
+        get_parameters: function(base_name) {
             let elements = [];
             $('input').each(function(index, element){ elements.push(element); });
             $('textarea').each(function(index, element){ elements.push(element); });
@@ -445,8 +446,8 @@
             for (let i = 0; i < elements.length; i++) {
                 let element = elements[i];
 
-                if (element.id.indexOf('params{"') >= 0) {
-                    let param_name = util.replace_all(util.replace_all(util.replace_all(element.id, 'params{', ''), '"', ''), '}', '');
+                if (element.id.indexOf(base_name + '{"') >= 0) {
+                    let param_name = util.replace_all(util.replace_all(util.replace_all(element.id, base_name + '{', ''), '"', ''), '}', '');
 
                     // 配列
                     if ($(element).attr('is_array') !== undefined) {
@@ -480,8 +481,26 @@
                     }
                 }
             }
+            return params;
+        },
 
-            return JSON.stringify(params);
+        /**
+         * テストフォーム POSTメッセージを作成します。
+         * @returns string json
+         */
+        create_post_message: function() {
+            return JSON.stringify(reference.get_parameters("post_params"));
+        },
+
+        create_url_message: function() {
+            let url = "";
+            let params = reference.get_parameters("url_params");
+            if (Object.keys(params).length > 0) {
+                for (let i = 0; i < Object.keys(params).length; i++) {
+                    url += "/" + params["" + i];
+                }
+            }
+            return url;
         },
 
         /**
@@ -525,6 +544,7 @@
             let url = $("#url").val();
 
             // TODO: urlパラメータ対応
+            url += reference.create_url_message();
 
             // POSTメッセージを取得
             let post_message = null;
@@ -598,6 +618,109 @@
             });
         },
 
+        /**
+         * パラメータの入力フォームを作成します。
+         * @param method string メソッド POST/GET/PUT/DELETE
+         * @param type string パラメータ種別 post/url/query
+         * @param info メソッド情報オブジェクト
+         * @returns string html
+         */
+        create_parameter_form: function(method, type, info) {
+            let html = "";
+
+            let params = [];
+            let name_prefix = "";
+            if (type == "url") {
+                params = info.UrlParameters;
+                name_prefix = "url_params";
+            }
+            else if (type == "query") {
+                params = info.QueryParameters;
+                name_prefix = "query_params";
+            }
+            else if (type == "post") {
+                params = info.PostParameters;
+                name_prefix = "post_params";
+            }
+
+            // パラメータ数をカウント
+            let param_count = 0;
+            for (let v in params) {param_count++;}
+            if (param_count <= 0) return "";
+
+            // サブタイトル
+            if (type == "url") {
+                html += '<h2>URL Parameter' + (param_count > 1 ? 's' : '') + '</h2>';
+            }
+            else if (type == "query") {
+                html += '<h2>Query Parameter' + (param_count > 1 ? 's' : '') + '</h2>';
+            }
+            else if (type == "post") {
+                html += '<h2>' + method + ' Parameter' + (param_count > 1 ? 's' : '') + '</h2>';
+            }
+            html += "<div class=\"contents\">";
+
+            // パラメータリスト
+            html += '<table class="ui-widget list">';
+            html += '<tr>';
+            html += '<th class="ui-widget-header header">' + (type != "url" ? "Name" : "Index") + '</th>';
+            html += '<th class="ui-widget-header header">Type</th>';
+            html += '<th class="ui-widget-header header">Required</th>';
+            html += '<th class="ui-widget-header header">Conditions</th>';
+            html += '<th class="ui-widget-header header">Value</th>';
+            html += '<th class="ui-widget-header header">Description</th>';
+            html += '</tr>';
+
+            for (let parameter_name in params) {
+                let parameter = params[parameter_name];
+                html += '<tr>';
+                html += '<td class="ui-widget-content name">' + parameter_name + '</td>';
+                html += '<td class="ui-widget-content type">' + reference.get_type_name(parameter.Type) + '</td>';
+                html += '<td class="ui-widget-content required">' + parameter.Require + '</td>';
+                html += '<td class="ui-widget-content condition">' + reference.get_condition(parameter) + '</td>';
+
+                if (parameter.Type == TYPE_ARRAY) {
+                    html += '<td class="ui-widget-content value"><input type="text" name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\' is_array="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
+                }
+                else if (parameter.Type === TYPE_MAP) {
+                    html += '<td class="ui-widget-content value"><input type="text" name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\' is_map="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
+                }
+                else if (reference.is_numeric_type(parameter.Type)) {
+                    html += '<td class="ui-widget-content value"><input type="text" name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\' is_number="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
+                }
+                else if (parameter.Type == TYPE_BOOL) {
+                    html += '<td class="ui-widget-content value"><input type="text" name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\' is_bool="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
+                }
+                else if (parameter.Type == TYPE_STRING && parameter.IsMultilineString) {
+                    html += '<td class="ui-widget-content value"><textarea name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\'>' + reference.get_parameter_value(parameter) + '</textarea></td>';
+                }
+                else {
+                    html += '<td class="ui-widget-content value"><input type="text" name=\'' + name_prefix + '{"' + parameter_name + '"}\' id=\'' + name_prefix + '{"' + parameter_name + '"}\' value="' + reference.get_parameter_value(parameter) + '" /></td>';
+                }
+
+                html += '<td class="ui-widget-content desc">' + marked(parameter.Description) + '</td>';
+                html += '</tr>';
+            }
+            html += '</table>';
+            if (type == "url") {
+                html += '<div class="notice">URLパラメータは、APIパスの後に続けて付与するパラメータです。</div>';
+                html += '<div class="notice">例えば、"/example/add" というAPIに、5という値と6という値を渡す場合は、"<strong class="orange">/example/add/5/6</strong>" とアクセスして渡します。</div>';
+                html += '<div class="notice">URL形式でパラメータを渡すため、配列などの複雑な値を渡すことには向いていません。</div>';
+            }
+            else if (type == "query") {
+                html += '<div class="notice">クエリパラメータは、URLの後に?を付与し、記述するパラメータです。</div>';
+                html += '<div class="notice">例えば、"/example/add" というAPIに、Value1に5、Value2に6という値を渡す場合は、"<strong class="orange">/example/add?Value1=5&Value2=6</strong>" とアクセスして渡します。</div>';
+                html += '<div class="notice">URLに続けてパラメータを渡すため、配列などの複雑な値を渡すことには向いていません。</div>';
+            }
+            else if (type == "post") {
+                html += '<div class="notice">POSTパラメータは、POSTデータにjsonで渡すパラメータです。</div>';
+                html += '<div class="notice">例えば、"/example/add" というAPIに、Value1に5、Value2に6という値を渡す場合は、"<strong class="orange">{"Value":5, "Value2":6}</strong>" という内容のjsonを、POSTデータとして送信します。</div>';
+                html += '<div class="notice">json形式で渡すため、jsonで表現可能な形式であれば、どんなパラメータにも対応できます。但し、POSTメソッドにしか対応していません。</div>';
+            }
+            html += '</div>';
+            return html;
+        },
+
         show_reference: function(e) {
             let id = "#" + e.currentTarget.id;
             let method = $(id).attr('method');
@@ -634,7 +757,7 @@
             // description
             if (info.Description && info.Description.length > 0) {
                 html += '<h2>Description</h2>';
-                html += '<div class="contents">' + info.Description + '</div>';
+                html += '<div class="contents">' + marked(info.Description) + '</div>';
             }
 
             // API info
@@ -678,7 +801,7 @@
                 html += '<td class="ui-widget-content value"><input type="text" name="user_agent" id="user_agent" value="' + user_agent + "\" /></td>";
                 html += '</tr>';
                 html += '</table>';
-                html += '<div class="notice">Goliathでは、クライアントのバージョンチェックをUserAgentにて行っています。';
+                html += '<div class="notice">Goliathでは、クライアントのバージョンチェックをUserAgentにて行っています。</div>';
                 html += '<div class="notice">正しいUserAgentを指定していない場合は、不正なクライアントとしてアクセス拒否される場合がありますので、クライアント側はconfigに定義したパターンのUserAgentを指定してください。</div>';
                 html += '<div class="notice">※UserAgentの変更が出来ないクライアントの場合は、ヘッダに \'<strong class="orange">X-Goliath-User-Agent</strong>\' という名前でUserAgentを指定してください。</div>';
                 html += '</div>';
@@ -706,65 +829,15 @@
                 html += '</div>';
             }
 
-            // todo: URL Parameters
+            // URL Parameters
+            html += reference.create_parameter_form(method, "url", info);
+
+            // Query Parameters
+            html += reference.create_parameter_form(method, "query", info);
 
             // POST parameters
             if (method === "POST") {
-                // パラメータ数をカウント
-                let param_count = 0;
-                for (let v in info.PostParameters) {param_count++;}
-
-                // サブタイトル
-                html += '<h2>' + method + ' Parameter' + (param_count > 1 ? 's' : '') + '</h2>';
-                html += "<div class=\"contents\">";
-
-                // パラメータリスト
-                if (param_count <= 0) {
-                    html += "No parameter.";
-                }
-                else {
-                    html += '<table class="ui-widget list">';
-                    html += '<tr>';
-                    html += '<th class="ui-widget-header header">Name</th>';
-                    html += '<th class="ui-widget-header header">Type</th>';
-                    html += '<th class="ui-widget-header header">Required</th>';
-                    html += '<th class="ui-widget-header header">Conditions</th>';
-                    html += '<th class="ui-widget-header header">Value</th>';
-                    html += '<th class="ui-widget-header header">Description</th>';
-                    html += '</tr>';
-                    for (let parameter_name in info.PostParameters) {
-                        let parameter = info.PostParameters[parameter_name];
-                        html += '<tr>';
-                        html += '<td class="ui-widget-content name">' + parameter_name + '</td>';
-                        html += '<td class="ui-widget-content type">' + reference.get_type_name(parameter.Type) + '</td>';
-                        html += '<td class="ui-widget-content required">' + parameter.Require + '</td>';
-                        html += '<td class="ui-widget-content condition">' + reference.get_condition(parameter) + '</td>';
-
-                        if (parameter.Type == TYPE_ARRAY) {
-                            html += '<td class="ui-widget-content value"><input type="text" name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\' is_array="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
-                        }
-                        else if (parameter.Type === TYPE_MAP) {
-                            html += '<td class="ui-widget-content value"><input type="text" name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\' is_map="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
-                        }
-                        else if (reference.is_numeric_type(parameter.Type)) {
-                            html += '<td class="ui-widget-content value"><input type="text" name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\' is_number="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
-                        }
-                        else if (parameter.Type == TYPE_BOOL) {
-                            html += '<td class="ui-widget-content value"><input type="text" name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\' is_bool="true" value="' + reference.get_parameter_value(parameter) + '" /></td>';
-                        }
-                        else if (parameter.Type == TYPE_STRING && parameter.IsMultilineString) {
-                            html += '<td class="ui-widget-content value"><textarea name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\'>' + reference.get_parameter_value(parameter) + '</textarea></td>';
-                        }
-                        else {
-                            html += '<td class="ui-widget-content value"><input type="text" name=\'params{"' + parameter_name + '"}\' id=\'params{"' + parameter_name + '"}\' value="' + reference.get_parameter_value(parameter) + '" /></td>';
-                        }
-
-                        html += '<td class="ui-widget-content desc">' + parameter.Description + '</td>';
-                        html += '</tr>';
-                    }
-                    html += '</table>';
-                }
-                html += '</div>';
+                html += reference.create_parameter_form(method, "post", info);
             }
 
             // returns
@@ -901,7 +974,6 @@
                 html += '</div>';
             }
 
-
             html += '</div>';
 
             // 出力
@@ -1006,6 +1078,8 @@
     };
 
     $(function() {
+        marked.setOptions({breaks : true});
+
         // リファレンスの構成情報を取得
         reference.initialize();
 

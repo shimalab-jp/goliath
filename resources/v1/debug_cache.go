@@ -15,6 +15,7 @@ func (res DebugCache) Define() (*rest.ResourceDefine) {
                 Summary:               "キャッシュクリア",
                 Description:           "memcached及び内部キャッシュの全ての値をクリアします。",
                 UrlParameters:         []rest.UrlParameter{},
+                QueryParameters:       map[string]rest.QueryParameter{},
                 PostParameters:        map[string]rest.PostParameter{},
                 Returns:               map[string]rest.Return{},
                 RequireAuthentication: false,

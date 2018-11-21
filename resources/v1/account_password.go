@@ -13,10 +13,11 @@ func (res AccountPassword) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
-                Summary:       "パスワードリセット",
-                Description:   "データ移行用のパスワードをリセットします。",
-                UrlParameters: []rest.UrlParameter{},
-                PostParameters: map[string]rest.PostParameter{},
+                Summary:         "パスワードリセット",
+                Description:     "データ移行用のパスワードをリセットします。",
+                UrlParameters:   []rest.UrlParameter{},
+                QueryParameters: map[string]rest.QueryParameter{},
+                PostParameters:  map[string]rest.PostParameter{},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
@@ -35,6 +36,6 @@ func (res AccountPassword) Post(request *rest.Request, response *rest.Response) 
     }
 
     // 戻り値に値をセット
-    response.Result = map[string]interface{}{ "AccountInfo": account.Output() }
+    response.Result = map[string]interface{}{"AccountInfo": account.Output()}
     return nil
 }

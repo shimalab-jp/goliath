@@ -26,7 +26,7 @@ type ExecutionHooks interface {
 type Engine struct {
     initialized      bool
     hooks            *ExecutionHooks
-    resourceManager  *resourceManager
+    resourceManager  *ResourceManager
     userAgentPattern *regexp.Regexp
 }
 
@@ -86,7 +86,8 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     returnValue := &Request{
         Languages:    []message.AcceptLanguage{},
         Headers:      map[string]string{},
-        GetData:      map[string]interface{}{},
+        UrlData:      []string{},
+        QueryData:    map[string]string{},
         PostData:     map[string]interface{}{},
         Resource:     nil,
         MethodInfo:   nil,
@@ -154,8 +155,24 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     // リソース名を取得
     removeUrl := strings.TrimRight(returnValue.BaseUrl, "/") + "/"
     apiPath := strings.TrimPrefix(httpRequest.URL.Path, removeUrl)
-    returnValue.Name = strings.ToLower("/" + strings.TrimLeft(strings.TrimSuffix(apiPath, path.Ext(httpRequest.URL.Path)), "/"))
+    apiPath = strings.ToLower("/" + strings.TrimRight(strings.TrimLeft(strings.TrimSuffix(apiPath, path.Ext(httpRequest.URL.Path)), "/"), "/"))
 
+    // RESTリソースのインスタンスを取得
+    resourcePath, resourcePtr := e.resourceManager.FindResource(returnValue.Version, apiPath)
+    if resourcePtr == nil || (*resourcePtr) == nil {
+        return nil, nil
+    }
+    returnValue.Name = resourcePath
+    returnValue.Resource = resourcePtr
+
+    // RESTリソースの定義情報を取得
+    returnValue.ResourceDefine = (*returnValue.Resource).Define()
+
+    // URLパラメータを取得
+    if len(returnValue.Name) < len(apiPath) {
+        urlParamString := strings.Trim(strings.TrimPrefix(apiPath, returnValue.Name), "/")
+        returnValue.UrlData = strings.Split(urlParamString, "/")
+    }
 
     // QueryStringを取得
     returnValue.QueryString = httpRequest.URL.RawQuery
@@ -164,7 +181,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     getData := httpRequest.URL.Query()
     if getData != nil {
         for key, value := range getData {
-            returnValue.GetData[key] = value[0]
+            returnValue.QueryData[key] = value[0]
         }
     }
 
@@ -182,15 +199,6 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
             }
         }
     }
-
-    // RESTリソースのインスタンスを作成
-    returnValue.Resource = e.resourceManager.FindResource(returnValue.Version, returnValue.Name)
-    if returnValue.Resource == nil || (*returnValue.Resource) == nil {
-        return nil, nil
-    }
-
-    // RESTリソースの定義情報を取得
-    returnValue.ResourceDefine = (*returnValue.Resource).Define()
 
     // 解析時間を記録
     returnValue.ParseTime = time.Now().UnixNano() - startTime
@@ -426,197 +434,288 @@ func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkPostParameters(request *Request, response *Response) (bool) {
-    if len(request.MethodInfo.PostParameters) <= 0 {
+func (e *Engine) checkParameterType(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+    result := true
+    switch (*define).GetType() {
+    case reflect.Bool:
+        if _, err := strconv.ParseBool(value); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Bool")
+        }
+        break
+    case reflect.Int8:
+        if _, err := strconv.ParseInt(value, 10, 8); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Int8")
+        }
+        break
+    case reflect.Int16:
+        if _, err := strconv.ParseInt(value, 10, 16); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Int16")
+        }
+        break
+    case reflect.Int32:
+        if _, err := strconv.ParseInt(value, 10, 32); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Int32")
+        }
+        break
+    case reflect.Int64:
+    case reflect.Int:
+        if _, err := strconv.ParseInt(value, 10, 64); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Int64")
+        }
+        break
+    case reflect.Uint8:
+        if _, err := strconv.ParseUint(value, 10, 8); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Uint8")
+        }
+        break
+    case reflect.Uint16:
+        if _, err := strconv.ParseUint(value, 10, 16); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Uint16")
+        }
+        break
+    case reflect.Uint32:
+        if _, err := strconv.ParseUint(value, 10, 32); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Uint32")
+        }
+        break
+    case reflect.Uint64:
+    case reflect.Uint:
+        if _, err := strconv.ParseUint(value, 10, 64); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Uint64")
+        }
+        break
+    case reflect.Float32:
+        if _, err := strconv.ParseFloat(value, 32); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Float32")
+        }
+        break
+    case reflect.Float64:
+        if _, err := strconv.ParseFloat(value, 64); err != nil {
+            result = false
+            response.SetErrorMessage("ERR_RES_102", paramTypeName, name, "Float64")
+        }
+        break
+    default:
+        break
+    }
+    return result
+}
+
+func (e *Engine) checkParameterRange(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+    result := true
+    rangeArray := (*define).GetRange()
+    switch (*define).GetType() {
+    case reflect.Int8:
+    case reflect.Int16:
+    case reflect.Int32:
+    case reflect.Int64:
+    case reflect.Int:
+        if v, err := strconv.ParseInt(value, 10, 64); err == nil {
+            if !(int64(rangeArray[0]) <= v && v <= int64(rangeArray[1])) {
+                result = false
+                response.SetErrorMessage("ERR_RES_103", paramTypeName, name, rangeArray[0], rangeArray[1])
+            }
+        }
+        break
+    case reflect.Uint8:
+    case reflect.Uint16:
+    case reflect.Uint32:
+    case reflect.Uint64:
+    case reflect.Uint:
+        if v, err := strconv.ParseUint(value, 10, 64); err == nil {
+            if !(uint64(rangeArray[0]) <= v && v <= uint64(rangeArray[1])) {
+                result = false
+                response.SetErrorMessage("ERR_RES_103", paramTypeName, name, rangeArray[0], rangeArray[1])
+            }
+        }
+        break
+    case reflect.Float32:
+    case reflect.Float64:
+        if v, err := strconv.ParseFloat(value, 64); err == nil {
+            if !(rangeArray[0] <= v && v <= rangeArray[1]) {
+                result = false
+                response.SetErrorMessage("ERR_RES_103", paramTypeName, name, rangeArray[0], rangeArray[1])
+            }
+        }
+        break
+    }
+    return result
+}
+
+func (e *Engine) checkParameterSelect(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+    result := true
+    switch (*define).GetType() {
+    case reflect.Int8:
+    case reflect.Int16:
+    case reflect.Int32:
+    case reflect.Int64:
+    case reflect.Int:
+    case reflect.Uint8:
+    case reflect.Uint16:
+    case reflect.Uint32:
+    case reflect.Uint64:
+    case reflect.Uint:
+    case reflect.Float32:
+    case reflect.Float64:
+    case reflect.String:
+        hit := false
+        search := ""
+        for _, val := range (*define).GetSelect() {
+            selVal := fmt.Sprintf("%+v", val)
+            if len(search) > 0 {
+                search = fmt.Sprintf("%s, %s", search, selVal)
+            } else {
+                search = selVal
+            }
+            if value == selVal {
+                hit = true
+                break
+            }
+        }
+        if !hit {
+            result = false
+            response.SetErrorMessage("ERR_RES_104", paramTypeName, name, search)
+        }
+        break
+    }
+    return result
+}
+
+func (e *Engine) checkParameterRegex(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+    result := true
+    r := regexp.MustCompile((*define).GetRegex())
+    result = r.MatchString(value)
+    if !result {
+        response.SetErrorMessage("ERR_RES_105", paramTypeName, name)
+    }
+    return result
+}
+
+func (e *Engine) checkParameters(pType ParameterType, request *Request, response *Response) (bool) {
+    // パラメータ種別毎に値を格納
+    defines := map[string]Parameter{}
+    values := map[string]string{}
+    paramTypeName := ""
+    switch pType {
+    case PostParam:
+        for k, v := range request.MethodInfo.PostParameters {
+            defines[k] = Parameter(&v)
+        }
+        for k, v := range request.PostData {
+            values[k] = fmt.Sprintf("%+v", v)
+        }
+        paramTypeName = "POST"
+        break
+    case QueryParam:
+        for k, v := range request.MethodInfo.QueryParameters {
+            defines[k] = Parameter(&v)
+        }
+        for k, v := range request.QueryData {
+            values[k] = v
+        }
+        paramTypeName = "Query"
+        break
+    case UrlParam:
+        for k, v := range request.MethodInfo.UrlParameters {
+            defines[strconv.FormatInt(int64(k), 10)] = Parameter(&v)
+        }
+        for k, v := range request.UrlData {
+            values[strconv.FormatInt(int64(k), 10)] = v
+        }
+        paramTypeName = "URL"
+        break
+    }
+
+    // 定義が無ければ処理しない
+    if defines == nil || len(defines) <= 0 {
         return true
     }
 
+    // 定義でループ
     var result = true
-    for name, def := range request.MethodInfo.PostParameters {
-        // 無視パラメータチェック
-        if name == "RequestID" {
-            continue
-        }
-
+    var multiple *Parameter = nil
+    for name, def := range defines {
         // 必須パラメータチェック
         if result {
-            if def.Require {
-                if _, ok := request.PostData[name]; !ok {
-                    response.SetErrorMessage("ERR_RES_101", name)
+            if def.GetRequire() {
+                if _, ok := values[name]; !ok {
+                    response.SetErrorMessage("ERR_RES_101", paramTypeName, name)
                     result = false
                 }
             } else {
-                if _, ok := request.PostData[name]; !ok {
+                if _, ok := values[name]; !ok {
                     continue
                 }
             }
         }
 
         // 値を文字列に変換
-        strVal := fmt.Sprintf("%+v", request.PostData[name])
+        strVal := values[name]
 
-        // 型チェック(全て)
+        // 型チェック
         if result {
-            switch def.Type {
-            case reflect.Bool:
-                if _, err := strconv.ParseBool(strVal); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Bool")
-                }
-                break
-            case reflect.Int8:
-                if _, err := strconv.ParseInt(strVal, 10, 8); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Int8")
-                }
-                break
-            case reflect.Int16:
-                if _, err := strconv.ParseInt(strVal, 10, 16); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Int16")
-                }
-                break
-            case reflect.Int32:
-                if _, err := strconv.ParseInt(strVal, 10, 32); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Int32")
-                }
-                break
-            case reflect.Int64:
-            case reflect.Int:
-                if _, err := strconv.ParseInt(strVal, 10, 64); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Int64")
-                }
-                break
-            case reflect.Uint8:
-                if _, err := strconv.ParseUint(strVal, 10, 8); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Uint8")
-                }
-                break
-            case reflect.Uint16:
-                if _, err := strconv.ParseUint(strVal, 10, 16); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Uint16")
-                }
-                break
-            case reflect.Uint32:
-                if _, err := strconv.ParseUint(strVal, 10, 32); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Uint32")
-                }
-                break
-            case reflect.Uint64:
-            case reflect.Uint:
-                if _, err := strconv.ParseUint(strVal, 10, 64); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Uint64")
-                }
-                break
-            case reflect.Float32:
-                if _, err := strconv.ParseFloat(strVal, 32); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Float32")
-                }
-                break
-            case reflect.Float64:
-                if _, err := strconv.ParseFloat(strVal, 64); err != nil {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_102", name, "Float64")
-                }
-                break
-            default:
-                break
-            }
+            result = e.checkParameterType(request, response, paramTypeName, name, &def, strVal)
         }
 
         // 範囲チェック(数値のみ)
-        if result && len(def.Range) >= 2 {
-            switch def.Type {
-            case reflect.Int8:
-            case reflect.Int16:
-            case reflect.Int32:
-            case reflect.Int64:
-            case reflect.Int:
-                if v, err := strconv.ParseInt(strVal, 10, 64); err == nil {
-                    if !(int64(def.Range[0]) <= v && v <= int64(def.Range[1])) {
-                        result = false
-                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
-                    }
-                }
-                break
-            case reflect.Uint8:
-            case reflect.Uint16:
-            case reflect.Uint32:
-            case reflect.Uint64:
-            case reflect.Uint:
-                if v, err := strconv.ParseUint(strVal, 10, 64); err == nil {
-                    if !(uint64(def.Range[0]) <= v && v <= uint64(def.Range[1])) {
-                        result = false
-                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
-                    }
-                }
-                break
-            case reflect.Float32:
-            case reflect.Float64:
-                if v, err := strconv.ParseFloat(strVal, 64); err == nil {
-                    if !(def.Range[0] <= v && v <= def.Range[1]) {
-                        result = false
-                        response.SetErrorMessage("ERR_RES_103", name, def.Range[0], def.Range[1])
-                    }
-                }
-                break
-            }
+        if result && len(def.GetRange()) >= 2 {
+            result = e.checkParameterRange(request, response, paramTypeName, name, &def, strVal)
         }
 
         // 選択チェック(数値、文字列)
-        if result && len(def.Select) >= 1 {
-            switch def.Type {
-            case reflect.Int8:
-            case reflect.Int16:
-            case reflect.Int32:
-            case reflect.Int64:
-            case reflect.Int:
-            case reflect.Uint8:
-            case reflect.Uint16:
-            case reflect.Uint32:
-            case reflect.Uint64:
-            case reflect.Uint:
-            case reflect.Float32:
-            case reflect.Float64:
-            case reflect.String:
-                hit := false
-                search := ""
-                for _, val := range def.Select {
-                    selVal := fmt.Sprintf("%+v", val)
-                    if len(search) > 0 {
-                        search = fmt.Sprintf("%s, %s", search, selVal)
-                    } else {
-                        search = selVal
-                    }
-                    if strVal == selVal {
-                        hit = true
-                        break
-                    }
-                }
-                if !hit {
-                    result = false
-                    response.SetErrorMessage("ERR_RES_104", name, search)
-                }
-                break
-            }
+        if result && len(def.GetSelect()) >= 1 {
+            result = e.checkParameterSelect(request, response, paramTypeName, name, &def, strVal)
         }
 
         // 正規表現チェック(文字列のみ)
-        if result && len(def.Regex) > 0 && def.Type == reflect.String {
-            r := regexp.MustCompile(def.Regex)
-            result = r.MatchString(strVal)
-            if !result {
-                response.SetErrorMessage("ERR_RES_105", name)
+        if result && len(def.GetRegex()) > 0 && def.GetType() == reflect.String {
+            result = e.checkParameterRegex(request, response, paramTypeName, name, &def, strVal)
+        }
+
+        if def.GetIsMultiple() {
+            multiple = &def
+        }
+    }
+
+    // 複数パラメータが存在する場合は、未チェックの値を複数パラメータの条件でチェックする
+    if result && multiple != nil {
+        for name, val := range values {
+            if _, ok := defines[name]; ok {
+                continue
+            }
+
+            // 型チェック
+            if result {
+                result = e.checkParameterType(request, response, paramTypeName, name, multiple, val)
+            }
+
+            // 範囲チェック(数値のみ)
+            if result && len((*multiple).GetRange()) >= 2 {
+                result = e.checkParameterRange(request, response, paramTypeName, name, multiple, val)
+            }
+
+            // 選択チェック(数値、文字列)
+            if result && len((*multiple).GetSelect()) >= 1 {
+                result = e.checkParameterSelect(request, response, paramTypeName, name, multiple, val)
+            }
+
+            // 正規表現チェック(文字列のみ)
+            if result && len((*multiple).GetRegex()) > 0 && (*multiple).GetType() == reflect.String {
+                result = e.checkParameterRegex(request, response, paramTypeName, name, multiple, val)
             }
         }
     }
+
     return result
 }
 
@@ -732,7 +831,7 @@ func (e *Engine) SetHooks(hooks *ExecutionHooks) {
     }
 }
 
-func (e *Engine) GetResourceManager() (*resourceManager) {
+func (e *Engine) GetResourceManager() (*ResourceManager) {
     return e.resourceManager
 }
 
@@ -836,18 +935,25 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
         response.Times["T242_CHECK_ADMIN_ONLY"] = time.Now().UnixNano() - st
     }
 
-    // TODO: URLパラメータチェック
+    // URLパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        //e.checkParameters(request, response, &request.MethodInfo.UrlParameters, &request.GetData)
+        e.checkParameters(UrlParam, request, response)
         response.Times["T251_CHECK_URL_PARAMETERS"] = time.Now().UnixNano() - st
+    }
+
+    // Queryパラメータチェック
+    if response.ResultCode == ResultOK {
+        st := time.Now().UnixNano()
+        e.checkParameters(UrlParam, request, response)
+        response.Times["T252_CHECK_QUERY_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
     // POSTパラメータチェック
     if response.ResultCode == ResultOK {
         st := time.Now().UnixNano()
-        e.checkPostParameters(request, response)
-        response.Times["T252_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
+        e.checkParameters(PostParam, request, response)
+        response.Times["T253_CHECK_POST_PARAMETERS"] = time.Now().UnixNano() - st
     }
 
     // 最終アクセス日時更新

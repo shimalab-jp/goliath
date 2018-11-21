@@ -14,9 +14,10 @@ func (res AccountRegist) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
-                Summary:       "アカウント登録",
-                Description:   "新規アカウントを登録します。",
-                UrlParameters: []rest.UrlParameter{},
+                Summary:         "アカウント登録",
+                Description:     "新規アカウントを登録します。",
+                UrlParameters:   []rest.UrlParameter{},
+                QueryParameters: map[string]rest.QueryParameter{},
                 PostParameters: map[string]rest.PostParameter{
                     "Platform": {
                         Type:        reflect.Uint8,
@@ -35,7 +36,7 @@ func (res AccountRegist) Define() (*rest.ResourceDefine) {
 
 func (res AccountRegist) Post(request *rest.Request, response *rest.Response) (error) {
     // パラメータを取得
-    platform := request.GetPostInt8("Platform", rest.PlatformNone)
+    platform, _ := request.GetParamInt8(rest.PostParam, "Platform", rest.PlatformNone)
 
     // アカウントを作成
     am := rest.GetAccountManager()
@@ -45,7 +46,7 @@ func (res AccountRegist) Post(request *rest.Request, response *rest.Response) (e
     }
 
     // 戻り値に値をセット
-    response.Result = map[string]interface{}{ "AccountInfo": account.Output() }
+    response.Result = map[string]interface{}{"AccountInfo": account.Output()}
 
     return nil
 }

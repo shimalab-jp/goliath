@@ -14,9 +14,10 @@ func (res AccountTrans) Define() (*rest.ResourceDefine) {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
-                Summary:       "アカウント移譲",
-                Description:   "新しい端末にプレイでデータを移譲します。",
-                UrlParameters: []rest.UrlParameter{},
+                Summary:         "アカウント移譲",
+                Description:     "新しい端末にプレイでデータを移譲します。",
+                UrlParameters:   []rest.UrlParameter{},
+                QueryParameters: map[string]rest.QueryParameter{},
                 PostParameters: map[string]rest.PostParameter{
                     "PlayerID": {
                         Type:        reflect.String,
@@ -44,7 +45,6 @@ func (res AccountTrans) Define() (*rest.ResourceDefine) {
                 IsDebugModeOnly:       false,
                 RunInMaintenance:      false}}}
 }
-
 
 func (res AccountTrans) Post(request *rest.Request, response *rest.Response) (error) {
     return nil

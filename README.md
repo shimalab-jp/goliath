@@ -68,6 +68,12 @@ $GOHOME 直下で下記コマンドを実行し、goliathをインストール�
 $ go get github.com/shimalab-jp/goliath
 ```
 
+リファレンスのスクリーンショット
+------------------------
+![リファレンス1](https://raw.githubusercontent.com/shimalab-jp/goliath/images/reference_screenshots1.png "リファレンス1")
+
+![リファレンス2](https://raw.githubusercontent.com/shimalab-jp/goliath/images/reference_screenshots2.png "リファレンス2")
+
 
 使い方
 ------

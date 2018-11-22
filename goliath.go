@@ -3,18 +3,18 @@ package goliath
 import (
     "encoding/json"
     "fmt"
+    "github.com/shimalab-jp/goliath/config"
     "github.com/shimalab-jp/goliath/database"
+    "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
+    "github.com/shimalab-jp/goliath/rest"
+    "github.com/shimalab-jp/goliath/util"
     "io/ioutil"
     "mime"
     "net/http"
     "os"
     "path"
     "strings"
-    "github.com/shimalab-jp/goliath/config"
-    "github.com/shimalab-jp/goliath/log"
-    "github.com/shimalab-jp/goliath/rest"
-    "github.com/shimalab-jp/goliath/util"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
     DataVersionNum uint32 = 1
 )
 
-func initDatabase() (error) {
+func initDatabase() error {
     var err error
     var con *database.Connection
 
@@ -253,10 +253,10 @@ func initDatabase() (error) {
         }
 
         if err == nil {
-            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
-            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
-            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
-            con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
+            _, _ = con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
+            _, _ = con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 0, '', 0, 253402268399, 'Init insert');")
+            _, _ = con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (1, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
+            _, _ = con.Execute("REPLACE INTO `goliath_mst_client_version` (`platform`, `major`, `minor`, `revision`, `resource_version`, `start_time`, `end_time`, `description`) VALUES (2, 1, 0, 1, '', 0, 253402268399, 'Init insert');")
         }
     }
 
@@ -283,7 +283,7 @@ func initDatabase() (error) {
     if err == nil {
         err = con.Commit()
     } else {
-        con.Rollback()
+        _ = con.Rollback()
     }
 
     con.Disconnect()
@@ -386,7 +386,7 @@ func referenceHandler(w http.ResponseWriter, r *http.Request) {
             w.WriteHeader(http.StatusForbidden)
         } else {
             w.Header().Set("Content-Type", "application/json")
-            w.Write(buffer)
+            _, _ = w.Write(buffer)
         }
     } else if util.FileExists(realPath) {
         buffer, err := ioutil.ReadFile(realPath)
@@ -395,14 +395,14 @@ func referenceHandler(w http.ResponseWriter, r *http.Request) {
         } else {
             mimeType := mime.TypeByExtension(path.Ext(realPath))
             w.Header().Set("Content-Type", mimeType)
-            w.Write(buffer)
+            _, _ = w.Write(buffer)
         }
     } else {
         w.WriteHeader(http.StatusNotFound)
     }
 }
 
-func Initialize(configPath string) (error) {
+func Initialize(configPath string) error {
     var err error = nil
 
     // configをロード
@@ -434,7 +434,7 @@ func Initialize(configPath string) (error) {
     return err
 }
 
-func AppendResource(version uint32, path string, resource rest.IRestResource) (error) {
+func AppendResource(version uint32, path string, resource rest.IRestResource) error {
     return rest.GetEngine().AppendResource(version, path, &resource)
 }
 
@@ -442,7 +442,7 @@ func SetHooks(hooks rest.ExecutionHooks) {
     rest.GetEngine().SetHooks(&hooks)
 }
 
-func Listen() (error) {
+func Listen() error {
     // API用のハンドラを追加
     for _, v := range config.Values.Server.Versions {
         apiUrl := strings.TrimRight(v.Url, "/") + "/"

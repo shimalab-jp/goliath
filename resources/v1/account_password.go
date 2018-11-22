@@ -9,7 +9,7 @@ type AccountPassword struct {
     rest.ResourceBase
 }
 
-func (res AccountPassword) Define() (*rest.ResourceDefine) {
+func (res AccountPassword) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
@@ -27,7 +27,7 @@ func (res AccountPassword) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res AccountPassword) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountPassword) Post(request *rest.Request, response *rest.Response) error {
     // アカウントを作成
     am := rest.GetAccountManager()
     account, err := am.RenewPassword(request.Account.Token)

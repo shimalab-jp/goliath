@@ -15,7 +15,7 @@ type Example1 struct {
 // ここで、どんなAPIなのか、どういったパラメータを受け取り、チェックするのかを定義します。
 // 今回は Type が Int32 に設定していますが、数値として評価出来ない値が渡されると、
 // APIの実行前に REST エンジン側でチェックし、自動的に不正なパラメータを防ぎます。
-func (res Example1) Define() (*rest.ResourceDefine) {
+func (res Example1) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
@@ -49,7 +49,7 @@ func (res Example1) Define() (*rest.ResourceDefine) {
 // 今回はPOSTなので、Postを実装します。
 // パラメータは、 request の Get〜メソッドで取得する事ができます。
 // 結果は response の Result に格納してください。
-func (res Example1) Post(request *rest.Request, response *rest.Response) (error) {
+func (res Example1) Post(request *rest.Request, response *rest.Response) error {
     // パラメータを取得
     v1, _ := request.GetParamInt32(rest.PostParam, "Value1", 0)
     v2, _ := request.GetParamInt32(rest.PostParam, "Value2", 0)

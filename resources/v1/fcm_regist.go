@@ -9,7 +9,7 @@ type FcmRegist struct {
     rest.ResourceBase
 }
 
-func (res FcmRegist) Define() (*rest.ResourceDefine) {
+func (res FcmRegist) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
@@ -32,6 +32,6 @@ func (res FcmRegist) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res FcmRegist) Post(request *rest.Request, response *rest.Response) (error) {
+func (res FcmRegist) Post(request *rest.Request, response *rest.Response) error {
     return nil
 }

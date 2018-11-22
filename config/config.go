@@ -70,7 +70,7 @@ type DatabaseConfig struct {
     Password string
 }
 
-func (db *DatabaseConfig) ConnectionString() (string) {
+func (db *DatabaseConfig) ConnectionString() string {
     return fmt.Sprintf(
         "%s:%s@tcp(%s:%d)/%s?parseTime=true",
         db.User,
@@ -107,7 +107,7 @@ type configRoot struct {
 var root *configRoot = nil
 var Values *GoliathConfig = nil
 
-func Load(configPath string) (error) {
+func Load(configPath string) error {
     buf, err := ioutil.ReadFile(os.ExpandEnv(configPath))
     if err != nil {
         return errors.WithStack(err)

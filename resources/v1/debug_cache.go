@@ -8,7 +8,7 @@ type DebugCache struct {
     rest.ResourceBase
 }
 
-func (res DebugCache) Define() (*rest.ResourceDefine) {
+func (res DebugCache) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "DELETE": {

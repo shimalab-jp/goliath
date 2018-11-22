@@ -11,7 +11,7 @@ type Example3 struct {
     rest.ResourceBase
 }
 
-func (res Example3) Define() (*rest.ResourceDefine) {
+func (res Example3) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "GET": {
@@ -41,7 +41,7 @@ func (res Example3) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res Example3) Get(request *rest.Request, response *rest.Response) (error) {
+func (res Example3) Get(request *rest.Request, response *rest.Response) error {
     // パラメータを取得
     v1, _ := request.GetParamInt32(rest.QueryParam, "Value1", 0)
     v2, _ := request.GetParamInt32(rest.QueryParam, "Value2", 0)

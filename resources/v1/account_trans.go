@@ -10,7 +10,7 @@ type AccountTrans struct {
     rest.ResourceBase
 }
 
-func (res AccountTrans) Define() (*rest.ResourceDefine) {
+func (res AccountTrans) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
@@ -46,6 +46,7 @@ func (res AccountTrans) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res AccountTrans) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountTrans) Post(request *rest.Request, response *rest.Response) error {
+    request.GetParamString(rest.PostParam, "PlayerID", "")
     return nil
 }

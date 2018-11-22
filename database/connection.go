@@ -138,16 +138,16 @@ func createResultSet(rows *sql.Rows) (*ResultSet) {
     return &rs
 }
 
-func (rs *ResultSet) EoF() (bool) {
+func (rs *ResultSet) EoF() bool {
     return rs.rowIndex >= len(rs.dataSet)
 }
 
-func (rs *ResultSet) MoveFirst() (bool) {
+func (rs *ResultSet) MoveFirst() bool {
     rs.rowIndex = 0
     return !rs.EoF()
 }
 
-func (rs *ResultSet) MoveNext() (bool) {
+func (rs *ResultSet) MoveNext() bool {
     if rs.rowIndex < len(rs.dataSet) - 1 {
         rs.rowIndex++
         return true
@@ -168,7 +168,7 @@ func (rs *ResultSet) getValue(name string) (interface{}, bool) {
     }
 }
 
-func (rs *ResultSet) GetString(name string, defaultValue string) (string) {
+func (rs *ResultSet) GetString(name string, defaultValue string) string {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case string:
@@ -180,7 +180,7 @@ func (rs *ResultSet) GetString(name string, defaultValue string) (string) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetInt(name string, defaultValue int) (int) {
+func (rs *ResultSet) GetInt(name string, defaultValue int) int {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -202,7 +202,7 @@ func (rs *ResultSet) GetInt(name string, defaultValue int) (int) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetInt8(name string, defaultValue int8) (int8) {
+func (rs *ResultSet) GetInt8(name string, defaultValue int8) int8 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -224,7 +224,7 @@ func (rs *ResultSet) GetInt8(name string, defaultValue int8) (int8) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetInt16(name string, defaultValue int16) (int16) {
+func (rs *ResultSet) GetInt16(name string, defaultValue int16) int16 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -246,7 +246,7 @@ func (rs *ResultSet) GetInt16(name string, defaultValue int16) (int16) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetInt32(name string, defaultValue int32) (int32) {
+func (rs *ResultSet) GetInt32(name string, defaultValue int32) int32 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -268,7 +268,7 @@ func (rs *ResultSet) GetInt32(name string, defaultValue int32) (int32) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetInt64(name string, defaultValue int64) (int64) {
+func (rs *ResultSet) GetInt64(name string, defaultValue int64) int64 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -290,7 +290,7 @@ func (rs *ResultSet) GetInt64(name string, defaultValue int64) (int64) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetUInt(name string, defaultValue uint) (uint) {
+func (rs *ResultSet) GetUInt(name string, defaultValue uint) uint {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case int:
@@ -312,7 +312,7 @@ func (rs *ResultSet) GetUInt(name string, defaultValue uint) (uint) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetUInt8(name string, defaultValue uint8) (uint8) {
+func (rs *ResultSet) GetUInt8(name string, defaultValue uint8) uint8 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case uint:
@@ -334,7 +334,7 @@ func (rs *ResultSet) GetUInt8(name string, defaultValue uint8) (uint8) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetUInt16(name string, defaultValue uint16) (uint16) {
+func (rs *ResultSet) GetUInt16(name string, defaultValue uint16) uint16 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case uint:
@@ -356,7 +356,7 @@ func (rs *ResultSet) GetUInt16(name string, defaultValue uint16) (uint16) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetUInt32(name string, defaultValue uint32) (uint32) {
+func (rs *ResultSet) GetUInt32(name string, defaultValue uint32) uint32 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case uint:
@@ -378,7 +378,7 @@ func (rs *ResultSet) GetUInt32(name string, defaultValue uint32) (uint32) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetUInt64(name string, defaultValue uint64) (uint64) {
+func (rs *ResultSet) GetUInt64(name string, defaultValue uint64) uint64 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case uint:
@@ -400,7 +400,7 @@ func (rs *ResultSet) GetUInt64(name string, defaultValue uint64) (uint64) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetFloat32(name string, defaultValue float32) (float32) {
+func (rs *ResultSet) GetFloat32(name string, defaultValue float32) float32 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case float64:
@@ -422,7 +422,7 @@ func (rs *ResultSet) GetFloat32(name string, defaultValue float32) (float32) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetFloat64(name string, defaultValue float64) (float64) {
+func (rs *ResultSet) GetFloat64(name string, defaultValue float64) float64 {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case float32:
@@ -444,7 +444,7 @@ func (rs *ResultSet) GetFloat64(name string, defaultValue float64) (float64) {
     return defaultValue
 }
 
-func (rs *ResultSet) GetBoolean(name string, defaultValue bool) (bool) {
+func (rs *ResultSet) GetBoolean(name string, defaultValue bool) bool {
     if v, ok := rs.getValue(name); ok {
         switch v.(type) {
         case bool:
@@ -466,7 +466,7 @@ func (rs *ResultSet) GetBoolean(name string, defaultValue bool) (bool) {
     return defaultValue
 }
 
-func getConnectionInfo(databaseName string) (*config.DatabaseConfig) {
+func getConnectionInfo(databaseName string) *config.DatabaseConfig {
     if config.Values != nil {
         for _, database := range config.Values.Database {
             if strings.ToLower(database.Name) == strings.ToLower(databaseName) {
@@ -484,7 +484,7 @@ func destroyConnection(con *Connection) {
     con = nil
 }
 
-func (con *Connection) BeginTransaction() (error) {
+func (con *Connection) BeginTransaction() error {
     if con == nil || con.Instance == nil {
         return errors.New(" database connection is nil.")
     }
@@ -497,7 +497,7 @@ func (con *Connection) BeginTransaction() (error) {
     return nil
 }
 
-func (con *Connection) Commit() (error) {
+func (con *Connection) Commit() error {
     if con == nil || con.Instance == nil {
         return errors.New(" database connection is nil.")
     }
@@ -509,7 +509,7 @@ func (con *Connection) Commit() (error) {
     return nil
 }
 
-func (con *Connection) Rollback() (error) {
+func (con *Connection) Rollback() error {
     if con == nil || con.Instance == nil {
         return errors.New(" database connection is nil.")
     }
@@ -523,10 +523,10 @@ func (con *Connection) Rollback() (error) {
 
 func (con *Connection) Disconnect() {
     if con != nil && con.Transaction != nil {
-        con.Rollback()
+        _ = con.Rollback()
     }
     if con != nil && con.Instance != nil {
-        con.Instance.Close()
+        _ = con.Instance.Close()
         con.Instance = nil
     }
 }

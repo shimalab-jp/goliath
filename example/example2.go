@@ -11,7 +11,7 @@ type Example2 struct {
     rest.ResourceBase
 }
 
-func (res Example2) Define() (*rest.ResourceDefine) {
+func (res Example2) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "GET": {
@@ -46,7 +46,7 @@ func (res Example2) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res Example2) Get(request *rest.Request, response *rest.Response) (error) {
+func (res Example2) Get(request *rest.Request, response *rest.Response) error {
     var result int32
     var val int32
     var next = true

@@ -84,7 +84,7 @@ func (txt *globalMessageManager) initialize() {
     }
 }
 
-func (txt *globalMessageManager) get(langs *[]AcceptLanguage, messageCode string, args ...interface{}) (string) {
+func (txt *globalMessageManager) get(langs *[]AcceptLanguage, messageCode string, args ...interface{}) string {
     txt.initialize()
 
     if messages, ok := txt.system[messageCode]; ok {
@@ -138,13 +138,13 @@ type GoliathMessageManager struct {
     Languages *[]AcceptLanguage
 }
 
-func CreateMessageManager(langs *[]AcceptLanguage) (*GoliathMessageManager) {
+func CreateMessageManager(langs *[]AcceptLanguage) *GoliathMessageManager {
     ret := &GoliathMessageManager{Languages: langs}
     ret.Get("INI_TXT_001")
     return ret
 }
 
-func (mm *GoliathMessageManager) Get(messageCode string, args ...interface{}) (string) {
+func (mm *GoliathMessageManager) Get(messageCode string, args ...interface{}) string {
     if manager == nil {
         manager = &globalMessageManager{}
     }

@@ -10,7 +10,7 @@ type AccountRegist struct {
     rest.ResourceBase
 }
 
-func (res AccountRegist) Define() (*rest.ResourceDefine) {
+func (res AccountRegist) Define() *rest.ResourceDefine {
     return &rest.ResourceDefine{
         Methods: map[string]rest.ResourceMethodDefine{
             "POST": {
@@ -34,7 +34,7 @@ func (res AccountRegist) Define() (*rest.ResourceDefine) {
                 RunInMaintenance:      false}}}
 }
 
-func (res AccountRegist) Post(request *rest.Request, response *rest.Response) (error) {
+func (res AccountRegist) Post(request *rest.Request, response *rest.Response) error {
     // パラメータを取得
     platform, _ := request.GetParamInt8(rest.PostParam, "Platform", rest.PlatformNone)
 

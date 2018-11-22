@@ -21,14 +21,12 @@ func (res AccountTrans) Define() *rest.ResourceDefine {
                 PostParameters: map[string]rest.PostParameter{
                     "PlayerID": {
                         Type:        reflect.String,
-                        Default:     rest.PlatformNone,
-                        Regex:       "[0-9]{4,4}-[0-9]{4,4}",
+                        Regex:       "^[0-9]{4,4}-[0-9]{4,4}$",
                         Require:     true,
                         Description: "プレイヤーID"},
                     "Password": {
                         Type:        reflect.String,
-                        Default:     rest.PlatformNone,
-                        Regex:       "[0-9A-F]{0,16}",
+                        Regex:       "^[0-9A-Z]{6,16}$",
                         Require:     true,
                         Description: "パスワード"},
                     "NewPlatform": {

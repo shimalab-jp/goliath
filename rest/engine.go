@@ -192,7 +192,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
             buffer, _ := ioutil.ReadAll(httpRequest.Body)
 
             // jsonを解析
-            json.Unmarshal(buffer, &returnValue.PostData)
+            _ = json.Unmarshal(buffer, &returnValue.PostData)
         } else {
             for key, value := range httpRequest.PostForm {
                 returnValue.PostData[key] = value[0]
@@ -206,7 +206,7 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
     return returnValue, nil
 }
 
-func (e *Engine) parseUserAgent(userAgent string) (*ClientVersion) {
+func (e *Engine) parseUserAgent(userAgent string) *ClientVersion {
     result := e.userAgentPattern.FindAllStringSubmatch(userAgent, -1)
     if len(result) > 0 && len(result[0]) == 6 {
         major, err := strconv.ParseUint(result[0][1], 10, 32)
@@ -238,7 +238,7 @@ func (e *Engine) parseUserAgent(userAgent string) (*ClientVersion) {
     return nil
 }
 
-func (e *Engine) checkClientVersion(request *Request, response *Response) (bool) {
+func (e *Engine) checkClientVersion(request *Request, response *Response) bool {
     // ユーザーエージェントからバージョン情報を取得
     cv := e.parseUserAgent(request.UserAgent)
     if cv == nil && config.Values.Client.MismatchAction != 0 {
@@ -281,7 +281,7 @@ func (e *Engine) checkClientVersion(request *Request, response *Response) (bool)
     return true
 }
 
-func (e *Engine) checkMethod(request *Request, response *Response) (bool) {
+func (e *Engine) checkMethod(request *Request, response *Response) bool {
     if v, ok := request.ResourceDefine.Methods[request.Method]; !ok {
         response.StatusCode = http.StatusMethodNotAllowed
         response.ResultCode = ResultNotImplemented
@@ -292,7 +292,7 @@ func (e *Engine) checkMethod(request *Request, response *Response) (bool) {
     }
 }
 
-func (e *Engine) checkToken(request *Request, response *Response) (bool) {
+func (e *Engine) checkToken(request *Request, response *Response) bool {
     // ヘッダからトークンを取得
     var token string
     if val, ok := request.Headers["X-Goliath-Token"]; ok {
@@ -307,7 +307,7 @@ func (e *Engine) checkToken(request *Request, response *Response) (bool) {
         }
     } else {
         // アカウントを取得
-        account, err := GetAccountManager().GetAccountByToken(token)
+        account, err := GetAccountManager(request, response).GetAccountByToken(token)
         if err != nil {
             log.Ee(err)
             response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RST_222", request.Name, token, err)
@@ -331,7 +331,7 @@ func (e *Engine) checkToken(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkBan(request *Request, response *Response) (bool) {
+func (e *Engine) checkBan(request *Request, response *Response) bool {
     if request.Account != nil && request.Account.IsBan {
         response.SetErrorMessage("ERR_RES_121")
         return false
@@ -339,7 +339,7 @@ func (e *Engine) checkBan(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
+func (e *Engine) checkApiSwitch(request *Request, response *Response) bool {
     con, err := database.Connect("goliath")
     if err != nil {
         response.SetSystemErrorMessage("ERR_RES_100", []interface{}{}, "SER_RDB_101", err)
@@ -372,7 +372,7 @@ func (e *Engine) checkApiSwitch(request *Request, response *Response) (bool) {
     }
 }
 
-func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
+func (e *Engine) checkMaintenance(request *Request, response *Response) bool {
     // 実行ユーザーが管理者の場合
     if request.Account != nil && request.Account.IsAdmin {
         return true
@@ -418,7 +418,7 @@ func (e *Engine) checkMaintenance(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
+func (e *Engine) checkDebugOnly(request *Request, response *Response) bool {
     if request.MethodInfo.IsDebugModeOnly && !config.Values.Server.Debug.Enable {
         response.SetErrorMessage("ERR_RES_111")
         return false
@@ -426,7 +426,7 @@ func (e *Engine) checkDebugOnly(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
+func (e *Engine) checkAdminOnly(request *Request, response *Response) bool {
     if request.MethodInfo.IsAdminModeOnly && request.Account != nil && !request.Account.IsAdmin {
         response.SetErrorMessage("ERR_RES_111")
         return false
@@ -434,7 +434,7 @@ func (e *Engine) checkAdminOnly(request *Request, response *Response) (bool) {
     return true
 }
 
-func (e *Engine) checkParameterType(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+func (e *Engine) checkParameterType(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) bool {
     result := true
     switch (*define).GetType() {
     case reflect.Bool:
@@ -511,7 +511,7 @@ func (e *Engine) checkParameterType(request *Request, response *Response, paramT
     return result
 }
 
-func (e *Engine) checkParameterRange(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+func (e *Engine) checkParameterRange(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) bool {
     result := true
     rangeArray := (*define).GetRange()
     switch (*define).GetType() {
@@ -552,7 +552,7 @@ func (e *Engine) checkParameterRange(request *Request, response *Response, param
     return result
 }
 
-func (e *Engine) checkParameterSelect(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+func (e *Engine) checkParameterSelect(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) bool {
     result := true
     switch (*define).GetType() {
     case reflect.Int8:
@@ -591,7 +591,7 @@ func (e *Engine) checkParameterSelect(request *Request, response *Response, para
     return result
 }
 
-func (e *Engine) checkParameterRegex(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) (bool) {
+func (e *Engine) checkParameterRegex(request *Request, response *Response, paramTypeName string, name string, define *Parameter, value string) bool {
     result := true
     r := regexp.MustCompile((*define).GetRegex())
     result = r.MatchString(value)
@@ -601,15 +601,16 @@ func (e *Engine) checkParameterRegex(request *Request, response *Response, param
     return result
 }
 
-func (e *Engine) checkParameters(pType ParameterType, request *Request, response *Response) (bool) {
+func (e *Engine) checkParameters(pType ParameterType, request *Request, response *Response) bool {
     // パラメータ種別毎に値を格納
-    defines := map[string]Parameter{}
+    params := map[string]Parameter{}
     values := map[string]string{}
     paramTypeName := ""
     switch pType {
     case PostParam:
         for k, v := range request.MethodInfo.PostParameters {
-            defines[k] = Parameter(&v)
+            c := v
+            params[k] = &c
         }
         for k, v := range request.PostData {
             values[k] = fmt.Sprintf("%+v", v)
@@ -618,7 +619,8 @@ func (e *Engine) checkParameters(pType ParameterType, request *Request, response
         break
     case QueryParam:
         for k, v := range request.MethodInfo.QueryParameters {
-            defines[k] = Parameter(&v)
+            c := v
+            params[k] = &c
         }
         for k, v := range request.QueryData {
             values[k] = v
@@ -627,7 +629,8 @@ func (e *Engine) checkParameters(pType ParameterType, request *Request, response
         break
     case UrlParam:
         for k, v := range request.MethodInfo.UrlParameters {
-            defines[strconv.FormatInt(int64(k), 10)] = Parameter(&v)
+            c := v
+            params[strconv.FormatInt(int64(k), 10)] = &c
         }
         for k, v := range request.UrlData {
             values[strconv.FormatInt(int64(k), 10)] = v
@@ -637,17 +640,19 @@ func (e *Engine) checkParameters(pType ParameterType, request *Request, response
     }
 
     // 定義が無ければ処理しない
-    if defines == nil || len(defines) <= 0 {
+    if len(params) <= 0 {
         return true
     }
 
     // 定義でループ
     var result = true
     var multiple *Parameter = nil
-    for name, def := range defines {
+    for name, param := range params {
+        log.D("%s, %s", name, param.GetDescription())
+
         // 必須パラメータチェック
         if result {
-            if def.GetRequire() {
+            if param.GetRequire() {
                 if _, ok := values[name]; !ok {
                     response.SetErrorMessage("ERR_RES_101", paramTypeName, name)
                     result = false
@@ -664,33 +669,33 @@ func (e *Engine) checkParameters(pType ParameterType, request *Request, response
 
         // 型チェック
         if result {
-            result = e.checkParameterType(request, response, paramTypeName, name, &def, strVal)
+            result = e.checkParameterType(request, response, paramTypeName, name, &param, strVal)
         }
 
         // 範囲チェック(数値のみ)
-        if result && len(def.GetRange()) >= 2 {
-            result = e.checkParameterRange(request, response, paramTypeName, name, &def, strVal)
+        if result && len(param.GetRange()) >= 2 {
+            result = e.checkParameterRange(request, response, paramTypeName, name, &param, strVal)
         }
 
         // 選択チェック(数値、文字列)
-        if result && len(def.GetSelect()) >= 1 {
-            result = e.checkParameterSelect(request, response, paramTypeName, name, &def, strVal)
+        if result && len(param.GetSelect()) >= 1 {
+            result = e.checkParameterSelect(request, response, paramTypeName, name, &param, strVal)
         }
 
         // 正規表現チェック(文字列のみ)
-        if result && len(def.GetRegex()) > 0 && def.GetType() == reflect.String {
-            result = e.checkParameterRegex(request, response, paramTypeName, name, &def, strVal)
+        if result && len(param.GetRegex()) > 0 && param.GetType() == reflect.String {
+            result = e.checkParameterRegex(request, response, paramTypeName, name, &param, strVal)
         }
 
-        if def.GetIsMultiple() {
-            multiple = &def
+        if param.GetIsMultiple() {
+            multiple = &param
         }
     }
 
     // 複数パラメータが存在する場合は、未チェックの値を複数パラメータの条件でチェックする
     if result && multiple != nil {
         for name, val := range values {
-            if _, ok := defines[name]; ok {
+            if _, ok := params[name]; ok {
                 continue
             }
 
@@ -780,43 +785,33 @@ func (e *Engine) updateLastAccess(request *Request, response *Response) {
     }
 }
 
-func (e *Engine) getStatusMessage(statusCode int) (string) {
+func (e *Engine) getStatusMessage(statusCode int) string {
     switch statusCode {
     case http.StatusOK:
         return "OK"
-        break
     case http.StatusBadRequest:
         return "Bad Request"
-        break
     case http.StatusUnauthorized:
         return "Unauthorized"
-        break
     case http.StatusPaymentRequired:
         return "Payment Required"
-        break
     case http.StatusForbidden:
         return "Forbidden"
-        break
     case http.StatusNotFound:
         return "Not Found"
-        break
     case http.StatusConflict:
         return "Conflict"
-        break
     case http.StatusInternalServerError:
         return "Internal Server Error"
-        break
     case http.StatusNotImplemented:
         return "Not Implemented"
-        break
     case http.StatusServiceUnavailable:
         return "Service Unavailable"
-        break
     }
     return "Not Implemented"
 }
 
-func (e *Engine) AppendResource(version uint32, path string, resource *IRestResource) (error) {
+func (e *Engine) AppendResource(version uint32, path string, resource *IRestResource) error {
     // 初期化チェック
     if !e.initialized {
         return errors.New("not initialized.")
@@ -831,11 +826,11 @@ func (e *Engine) SetHooks(hooks *ExecutionHooks) {
     }
 }
 
-func (e *Engine) GetResourceManager() (*ResourceManager) {
+func (e *Engine) GetResourceManager() *ResourceManager {
     return e.resourceManager
 }
 
-func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) (error) {
+func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) error {
     // 処理開始時間を記録
     startTime := time.Now().UnixNano()
 
@@ -1029,7 +1024,7 @@ func (e *Engine) Execute(httpRequest *http.Request, writer http.ResponseWriter) 
             }
             writer.Header().Set("Content-Length", strconv.FormatInt(response.ContentLength, 10))
             writer.WriteHeader(response.StatusCode)
-            writer.Write(*jsonData)
+            _, _ = writer.Write(*jsonData)
         } else {
             // jsonへの変換に失敗した場合は 500 Internal Server Error
             writer.WriteHeader(http.StatusInternalServerError)

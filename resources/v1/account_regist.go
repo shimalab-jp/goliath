@@ -39,14 +39,16 @@ func (res AccountRegist) Post(request *rest.Request, response *rest.Response) er
     platform, _ := request.GetParamInt8(rest.PostParam, "Platform", rest.PlatformNone)
 
     // アカウントを作成
-    am := rest.GetAccountManager()
-    account, err := am.Create(request, platform)
+    am := rest.GetAccountManager(request, response)
+    account, err := am.Create(platform)
     if err != nil {
         return err
     }
 
     // 戻り値に値をセット
-    response.Result = map[string]interface{}{"AccountInfo": account.Output()}
+    if response.ResultCode == rest.ResultOK {
+        response.Result = map[string]interface{}{"AccountInfo": account.Output()}
+    }
 
     return nil
 }

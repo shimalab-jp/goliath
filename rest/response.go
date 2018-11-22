@@ -2,10 +2,9 @@ package rest
 
 import (
     "encoding/json"
+    "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
     "time"
-
-    "github.com/shimalab-jp/goliath/log"
 )
 
 type MaintenanceInfo struct {
@@ -56,7 +55,7 @@ type OutputData struct {
     MaintenanceInfo MaintenanceInfo
 }
 
-func (response *Response) CreateOutputData() (*OutputData) {
+func (response *Response) CreateOutputData() *OutputData {
     return &OutputData{
         Method: response.Method,
         ApiName: response.Name,
@@ -89,7 +88,7 @@ func (response *Response) SetSystemErrorMessage(messageCode string, arg1 []inter
     response.DebugMessage = debugMessage
 }
 
-func (outputData *OutputData) ToJson() (*[]byte) {
+func (outputData *OutputData) ToJson() *[]byte {
     jsonData, err := json.Marshal(outputData)
     if err != nil {
         log.Ee(err)

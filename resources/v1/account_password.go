@@ -29,13 +29,16 @@ func (res AccountPassword) Define() *rest.ResourceDefine {
 
 func (res AccountPassword) Post(request *rest.Request, response *rest.Response) error {
     // アカウントを作成
-    am := rest.GetAccountManager()
+    am := rest.GetAccountManager(request, response)
     account, err := am.RenewPassword(request.Account.Token)
     if err != nil {
         return err
     }
 
     // 戻り値に値をセット
-    response.Result = map[string]interface{}{"AccountInfo": account.Output()}
+    if response.ResultCode == rest.ResultOK {
+        response.Result = map[string]interface{}{"AccountInfo": account.Output()}
+    }
+
     return nil
 }

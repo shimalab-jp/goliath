@@ -22,21 +22,21 @@ func (res AccountTrans) Define() *rest.ResourceDefine {
                     "PlayerID": {
                         Type:        reflect.String,
                         Default:     rest.PlatformNone,
-                        Regex:       "/[0-9]{4,4}-[0-9]{4,4}/",
+                        Regex:       "[0-9]{4,4}-[0-9]{4,4}",
                         Require:     true,
                         Description: "プレイヤーID"},
                     "Password": {
                         Type:        reflect.String,
                         Default:     rest.PlatformNone,
-                        Regex:       "/[0-9A-F]{40,40}/",
+                        Regex:       "[0-9A-F]{0,16}",
                         Require:     true,
-                        Description: "パスワード。SHA1でハッシュ化した値を指定してください。"},
-                    "Platform": {
+                        Description: "パスワード"},
+                    "NewPlatform": {
                         Type:        reflect.Uint8,
                         Default:     rest.PlatformNone,
                         Select:      []interface{}{rest.PlatformNone, rest.PlatformApple, rest.PlatformGoogle},
                         Require:     true,
-                        Description: "プラットフォーム。" + strconv.Itoa(rest.PlatformNone) + ":None, " + strconv.Itoa(rest.PlatformApple) + ":Apple, " + strconv.Itoa(rest.PlatformGoogle) + ":Google"}},
+                        Description: "新しいプラットフォーム。" + strconv.Itoa(rest.PlatformNone) + ":None, " + strconv.Itoa(rest.PlatformApple) + ":Apple, " + strconv.Itoa(rest.PlatformGoogle) + ":Google"}},
                 Returns: map[string]rest.Return{
                     "AccountInfo": {
                         Type:        reflect.Map,
@@ -47,6 +47,22 @@ func (res AccountTrans) Define() *rest.ResourceDefine {
 }
 
 func (res AccountTrans) Post(request *rest.Request, response *rest.Response) error {
-    request.GetParamString(rest.PostParam, "PlayerID", "")
+    // パラメータを取得
+    playerID, _ := request.GetParamString(rest.PostParam, "PlayerID", "")
+    password, _ := request.GetParamString(rest.PostParam, "Password", "")
+    platform, _ := request.GetParamInt8(rest.PostParam, "NewPlatform", rest.PlatformNone)
+
+    // アカウントを作成
+    am := rest.GetAccountManager(request, response)
+    account, err := am.Trans(playerID, password, platform)
+    if err != nil {
+        return err
+    }
+
+    // 戻り値に値をセット
+    if response.ResultCode == rest.ResultOK {
+        response.Result = map[string]interface{}{"AccountInfo": account.Output()}
+    }
+
     return nil
 }

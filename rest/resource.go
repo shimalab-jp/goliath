@@ -3,13 +3,12 @@ package rest
 import (
     "fmt"
     "github.com/pkg/errors"
+    "github.com/shimalab-jp/goliath/log"
     "net/http"
     "reflect"
     "regexp"
     "strings"
     "sync"
-
-    "github.com/shimalab-jp/goliath/log"
 )
 
 type ParameterType uint
@@ -183,15 +182,15 @@ type ResourceDefine struct {
 }
 
 type IRestResource interface {
-    Define() (*ResourceDefine)
-    Get(request *Request, response *Response) (error)
-    Post(request *Request, response *Response) (error)
-    Delete(request *Request, response *Response) (error)
-    Put(request *Request, response *Response) (error)
+    Define() *ResourceDefine
+    Get(request *Request, response *Response) error
+    Post(request *Request, response *Response) error
+    Delete(request *Request, response *Response) error
+    Put(request *Request, response *Response) error
     SetVersion(version uint32)
-    GetVersion() (uint32)
+    GetVersion() uint32
     SetPath(path string)
-    GetPath() (string)
+    GetPath() string
 }
 
 type ResourceBase struct {
@@ -199,29 +198,29 @@ type ResourceBase struct {
     path    string
 }
 
-func (res *ResourceBase) Define() (*ResourceDefine) {
+func (res *ResourceBase) Define() *ResourceDefine {
     return &ResourceDefine{Methods: map[string]ResourceMethodDefine{}}
 }
 
-func (res *ResourceBase) Get(request *Request, response *Response) (error) {
+func (res *ResourceBase) Get(request *Request, response *Response) error {
     response.StatusCode = http.StatusMethodNotAllowed
     response.ResultCode = ResultNotImplemented
     return nil
 }
 
-func (res *ResourceBase) Post(request *Request, response *Response) (error) {
+func (res *ResourceBase) Post(request *Request, response *Response) error {
     response.StatusCode = http.StatusMethodNotAllowed
     response.ResultCode = ResultNotImplemented
     return nil
 }
 
-func (res *ResourceBase) Delete(request *Request, response *Response) (error) {
+func (res *ResourceBase) Delete(request *Request, response *Response) error {
     response.StatusCode = http.StatusMethodNotAllowed
     response.ResultCode = ResultNotImplemented
     return nil
 }
 
-func (res *ResourceBase) Put(request *Request, response *Response) (error) {
+func (res *ResourceBase) Put(request *Request, response *Response) error {
     response.StatusCode = http.StatusMethodNotAllowed
     response.ResultCode = ResultNotImplemented
     return nil
@@ -231,7 +230,7 @@ func (res *ResourceBase) SetVersion(version uint32) {
     res.version = version
 }
 
-func (res *ResourceBase) GetVersion() (uint32) {
+func (res *ResourceBase) GetVersion() uint32 {
     return res.version
 }
 
@@ -239,7 +238,7 @@ func (res *ResourceBase) SetPath(path string) {
     res.path = path
 }
 
-func (res *ResourceBase) GetPath() (string) {
+func (res *ResourceBase) GetPath() string {
     return res.path
 }
 
@@ -249,7 +248,7 @@ type ResourceManager struct {
     resources     *map[uint32]*map[string]*IRestResource
 }
 
-func createResourceManager() (*ResourceManager) {
+func createResourceManager() *ResourceManager {
     return &ResourceManager{
         initialized:   true,
         resourceMutex: &sync.Mutex{},
@@ -293,7 +292,7 @@ func (rm *ResourceManager) FindResource(version uint32, path string) (string, *I
     return apiPath, ret
 }
 
-func (rm *ResourceManager) Append(version uint32, path string, resource *IRestResource) (error) {
+func (rm *ResourceManager) Append(version uint32, path string, resource *IRestResource) error {
     if !rm.initialized {
         return errors.New("[ResourceManager] This structure has not been initialized.")
     }
@@ -355,7 +354,7 @@ func (rm *ResourceManager) Append(version uint32, path string, resource *IRestRe
     return err
 }
 
-func (rm *ResourceManager) GetAllResources() (*map[uint32]*map[string]*IRestResource) {
+func (rm *ResourceManager) GetAllResources() *map[uint32]*map[string]*IRestResource {
     if !rm.initialized {
         return nil
     }

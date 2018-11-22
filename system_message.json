@@ -16,6 +16,9 @@
   { "code": "ERR_RES_301", "result":400, "text": { "ja": "このクライアントからのアクセスは許可されていません。(RES301)" }},
   { "code": "ERR_RES_302", "result":600, "text": { "ja": "新しいバージョン %s にアップデートしてください。(RES302)" }},
 
+  { "code": "SER_RES_401", "result":410, "text": { "ja": "プレイヤーIDが間違ってるか、パスワードが違うため、移行できません。(RES401)" }},
+
+
   { "code": "SER_RST_201", "result":0, "text": { "ja": "クライアントバージョン情報の取得に失敗しました。(RST201)\n%+v" }},
   { "code": "SER_RST_221", "result":0, "text": { "ja": "不正なアカウントトークンを検知しました。API:%s, TOKEN:%s (RST221)" }},
   { "code": "SER_RST_222", "result":0, "text": { "ja": "アカウントの取得処理に失敗しました。API:%s, TOKEN:%s (RST222)\n%+v" }},

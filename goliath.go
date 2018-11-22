@@ -173,7 +173,7 @@ func initDatabase() error {
             "`modified` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()," +
             "PRIMARY KEY (`token`)," +
             "KEY `IDX_COUNT1` (`user_id`, `regist_month`)," +
-            "KEY `IDX_TRANSIT` (`user_id`)" +
+            "KEY `IDX_TRANSIT` (`user_id`, `is_valid`)" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;")
         if err == nil {
             log.I("[INITDB] CREATE `goliath_dat_account_token` table.")

@@ -4,25 +4,24 @@ import (
     "crypto/sha512"
     "fmt"
     "github.com/pkg/errors"
-    "math/rand"
-    "strings"
-    "sync"
-    "time"
-
     "github.com/shimalab-jp/goliath/config"
     "github.com/shimalab-jp/goliath/database"
     "github.com/shimalab-jp/goliath/log"
     "github.com/shimalab-jp/goliath/message"
+    "math/rand"
+    "strings"
+    "sync"
+    "time"
 )
 
 const (
-    createPlayerIdMaxRetry     int    = 3
-    playerIdFormat             string = "%04d-%04d"
-    passwordGenerateLength     int    = 6
-    passwordTokens             string = "ABCDEFGHJKLMNPQRTUVWXYZ2346789"
-    accountTokenFormat         string = "%04x%04x%04x:%04x%04x:%04x:%04x:%04x%04x:%04x%04x%04x"
-    createAccountTokenMaxRetry int    = 3
-    createAccountMaxRetry      int    = 3
+    accountCreatePlayerIdMaxRetry int    = 3
+    accountPlayerIdFormat         string = "%04d-%04d"
+    accountPasswordGenerateLength int    = 6
+    accountPasswordTokens         string = "ABCDEFGHJKLMNPQRTUVWXYZ2346789"
+    accountTokenFormat            string = "%04x%04x%04x:%04x%04x:%04x:%04x:%04x%04x:%04x%04x%04x"
+    accountCreateTokenMaxRetry    int    = 3
+    accountCreateMaxRetry         int    = 3
 )
 
 type AccountOutputInfo struct {
@@ -32,6 +31,10 @@ type AccountOutputInfo struct {
     Token    string
 }
 
+
+/********************
+ *** Account Info ***
+ ********************/
 type accountInfo struct {
     UserID         int64
     PlayerID       string
@@ -43,7 +46,7 @@ type accountInfo struct {
     IsAdmin        bool
 }
 
-func (am *accountInfo) Output() (AccountOutputInfo) {
+func (am *accountInfo) Output() AccountOutputInfo {
     return AccountOutputInfo{
         PlayerID: am.PlayerID,
         Password: am.Password,
@@ -51,14 +54,59 @@ func (am *accountInfo) Output() (AccountOutputInfo) {
         Token:    am.Token}
 }
 
-type accountManager struct {
+
+/*********************
+ *** Account Cache ***
+ *********************/
+type accountCache struct {
     tokenCacheMutex *sync.Mutex
     tokenCache      map[string]int64
 }
 
-var accountManagerInstance *accountManager = nil
+func (ac *accountCache) getUserIdByTokenFromCache(token string) int64 {
+    var ret int64 = 0
 
-func (am *accountManager) countTotalUsers(con *database.Connection) (int64, error) {
+    ac.tokenCacheMutex.Lock()
+    if userID, ok := ac.tokenCache[token]; ok {
+        ret = userID
+    }
+    ac.tokenCacheMutex.Unlock()
+
+    return ret
+}
+
+func (ac *accountCache) setTokenToCache(userID int64, token string) {
+    if userID <= 0 {
+        return
+    }
+
+    ac.tokenCacheMutex.Lock()
+    ac.tokenCache[token] = userID
+    ac.tokenCacheMutex.Unlock()
+}
+
+var cacheInstance *accountCache
+
+func getAccountCache() *accountCache {
+    if cacheInstance == nil {
+        cacheInstance =         &accountCache{
+            tokenCacheMutex:    &sync.Mutex{},
+            tokenCache:         map[string]int64{}}
+    }
+    return cacheInstance
+}
+
+
+/***********************
+ *** Account Manager ***
+ ***********************/
+type AccountManager struct {
+    cache    *accountCache
+    request  *Request
+    response *Response
+}
+
+func (am *AccountManager) countTotalUsers(con *database.Connection) (int64, error) {
     result, err := con.Query("SELECT COUNT(*) AS `users` FROM `goliath_dat_account`;")
     if err != nil {
         return 0, err
@@ -71,13 +119,13 @@ func (am *accountManager) countTotalUsers(con *database.Connection) (int64, erro
     return 0, nil
 }
 
-func (am *accountManager) generatePlayerId(con *database.Connection) (string, error) {
+func (am *AccountManager) generatePlayerId(con *database.Connection) (string, error) {
     var playerID = ""
     var count = 0
     for {
         count++
         rand.Seed(time.Now().UnixNano())
-        playerID = fmt.Sprintf(playerIdFormat, rand.Int31n(8999)+1000, rand.Int31n(9999))
+        playerID = fmt.Sprintf(accountPlayerIdFormat, rand.Int31n(8999)+1000, rand.Int31n(9999))
 
         result, err := con.Query("SELECT COUNT(*) AS `users` FROM `goliath_dat_account` WHERE `player_id` = ?;", playerID)
         if err != nil {
@@ -95,19 +143,19 @@ func (am *accountManager) generatePlayerId(con *database.Connection) (string, er
             break
         }
 
-        if count >= createPlayerIdMaxRetry {
-            return "", errors.New(message.SystemMessageManager.Get("SER_ACC_201", createPlayerIdMaxRetry))
+        if count >= accountCreatePlayerIdMaxRetry {
+            return "", errors.New(message.SystemMessageManager.Get("SER_ACC_201", accountCreatePlayerIdMaxRetry))
         }
     }
     return playerID, nil
 }
 
-func (am *accountManager) generatePassword() (string) {
+func (am *AccountManager) generatePassword() string {
     ret := ""
     rand.Seed(time.Now().UnixNano())
-    runes := []rune(passwordTokens)
+    runes := []rune(accountPasswordTokens)
     for {
-        if len(ret) < passwordGenerateLength {
+        if len(ret) < accountPasswordGenerateLength {
             pos := rand.Int31n(int32(len(runes)))
             ret = ret + string(runes[pos])
         } else {
@@ -117,7 +165,7 @@ func (am *accountManager) generatePassword() (string) {
     return ret
 }
 
-func (am *accountManager) generateAccountToken(con *database.Connection) (string, error) {
+func (am *AccountManager) generateAccountToken(con *database.Connection) (string, error) {
     var token = ""
     var count = 0
     for {
@@ -149,14 +197,14 @@ func (am *accountManager) generateAccountToken(con *database.Connection) (string
             break
         }
 
-        if count >= createAccountTokenMaxRetry {
-            return "", errors.New(message.SystemMessageManager.Get("SER_ACC_221", createAccountTokenMaxRetry))
+        if count >= accountCreateTokenMaxRetry {
+            return "", errors.New(message.SystemMessageManager.Get("SER_ACC_221", accountCreateTokenMaxRetry))
         }
     }
     return token, nil
 }
 
-func (am *accountManager) insertAccount(con *database.Connection, playerID string, password string, databaseNumber int8, platform int8, businessDay businessDay) (int64, error) {
+func (am *AccountManager) insertAccount(con *database.Connection, playerID string, password string, databaseNumber int8, platform int8, businessDay businessDay) (int64, error) {
     var sql = "INSERT INTO `goliath_dat_account` (`player_id`, `password`, `database_number`, `platform`, `is_ban`, `is_admin`, `create_business_day`, `last_access`) VALUES (?, ?, ?, ?, ?, ?, ?, ?);"
     var args = []interface{}{
         playerID,
@@ -175,7 +223,7 @@ func (am *accountManager) insertAccount(con *database.Connection, playerID strin
     return con.LastInsertedId, nil
 }
 
-func (am *accountManager) renewPassword(con *database.Connection, userID int64, password string) (error) {
+func (am *AccountManager) renewPassword(con *database.Connection, userID int64, password string) error {
     var sql = "UPDATE `goliath_dat_account` SET `password` = ? WHERE `user_id` = ?;"
     var args = []interface{}{password, userID}
 
@@ -188,7 +236,7 @@ func (am *accountManager) renewPassword(con *database.Connection, userID int64, 
     return nil
 }
 
-func (am *accountManager) insertAccountToken(con *database.Connection, token string, userID int64, businessDay businessDay) (error) {
+func (am *AccountManager) insertAccountToken(con *database.Connection, token string, userID int64, businessDay businessDay) error {
     var sql = "INSERT INTO `goliath_dat_account_token` (`token`, `user_id`, `is_valid`, `regist_month`) VALUES (?, ?, ?, ?);"
     var args = []interface{}{
         token,
@@ -203,7 +251,27 @@ func (am *accountManager) insertAccountToken(con *database.Connection, token str
     return nil
 }
 
-func (am *accountManager) insertAccountLog(con *database.Connection, userID int64, platform int8, businessDay businessDay) (error) {
+func (am *AccountManager) renewAccountToken(con *database.Connection, token string, userID int64, businessDay businessDay) error {
+    {
+        var sql = "UPDATE `goliath_dat_account_token` SET `is_valid` = 0 WHERE `user_id` = ? AND `is_valid` = 1;"
+        _, err := con.Execute(sql, userID)
+        if err != nil {
+            return err
+        }
+    }
+
+    {
+        var sql = "INSERT INTO `goliath_dat_account_token` (`token`, `user_id`, `is_valid`, `regist_month`) VALUES (?, ?, 1, ?);"
+        _, err := con.Execute(sql, token, userID, businessDay.Year*100 + businessDay.Month)
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
+
+func (am *AccountManager) insertAccountLog(con *database.Connection, userID int64, platform int8, businessDay businessDay) error {
     var sql = "INSERT INTO `goliath_log_create_account` (`business_day`, `user_id`, `platform`) VALUES (?, ?, ?);"
     var args = []interface{}{businessDay.BusinessDay, userID, platform}
 
@@ -214,29 +282,7 @@ func (am *accountManager) insertAccountLog(con *database.Connection, userID int6
     return nil
 }
 
-func (am *accountManager) getUserIdFromCache(token string) (int64) {
-    var ret int64 = 0
-
-    am.tokenCacheMutex.Lock()
-    if userID, ok := am.tokenCache[token]; ok {
-        ret = userID
-    }
-    am.tokenCacheMutex.Unlock()
-
-    return ret
-}
-
-func (am *accountManager) setUserIdToCache(userID int64, token string) {
-    if userID <= 0 {
-        return
-    }
-
-    am.tokenCacheMutex.Lock()
-    am.tokenCache[token] = userID
-    am.tokenCacheMutex.Unlock()
-}
-
-func (am *accountManager) getAccountByTokenFromMemcached(token string) (*accountInfo) {
+func (am *AccountManager) getAccountByTokenFromMemcached(token string) *accountInfo {
     mem := Memcached{}
     key := fmt.Sprintf("AccountCache:%s", token)
     var account accountInfo
@@ -250,7 +296,7 @@ func (am *accountManager) getAccountByTokenFromMemcached(token string) (*account
     return &account
 }
 
-func (am *accountManager) setAccountToMemcached(account *accountInfo) {
+func (am *AccountManager) setAccountToMemcached(account *accountInfo) {
     if account == nil {
         return
     }
@@ -263,9 +309,9 @@ func (am *accountManager) setAccountToMemcached(account *accountInfo) {
     }
 }
 
-func (am *accountManager) getAccountByToken(con *database.Connection, token string) (*accountInfo, error) {
+func (am *AccountManager) getAccountByToken(con *database.Connection, token string) (*accountInfo, error) {
     // ローカルキャッシュからユーザーIDの取得を試みる
-    userID := am.getUserIdFromCache(token)
+    userID := am.cache.getUserIdByTokenFromCache(token)
 
     // キャッシュから取得できなかった場合はDBから取得
     if userID == 0 {
@@ -282,7 +328,7 @@ func (am *accountManager) getAccountByToken(con *database.Connection, token stri
         }
 
         if userID > 0 {
-            am.setUserIdToCache(userID, token)
+            am.cache.setTokenToCache(userID, token)
         }
     }
 
@@ -306,7 +352,29 @@ func (am *accountManager) getAccountByToken(con *database.Connection, token stri
     return nil, nil
 }
 
-func (am *accountManager) GetAccountByToken(token string) (*accountInfo, error) {
+func (am *AccountManager) getAccountByPlayerID(con *database.Connection, playerID string) (*accountInfo, error) {
+    var sql = "SELECT `user_id`, `player_id`, `password`, `database_number`, `platform`, `is_ban`, `is_admin` FROM `goliath_dat_account` WHERE `player_id` = ?;"
+    result, err := con.Query(sql, playerID)
+    if err == nil {
+        if result.MoveFirst() {
+            account := accountInfo{}
+            account.UserID = result.GetInt64("user_id", 0)
+            account.PlayerID = result.GetString("player_id", "")
+            account.Password = result.GetString("password", "")
+            account.DatabaseNumber = result.GetInt8("database_number", 0)
+            account.Platform = result.GetInt8("platform", 0)
+            account.IsBan = result.GetBoolean("is_ban", false)
+            account.IsAdmin = result.GetBoolean("is_admin", false)
+            return &account, nil
+        }
+    } else {
+        return nil, err
+    }
+
+    return nil, nil
+}
+
+func (am *AccountManager) GetAccountByToken(token string) (*accountInfo, error) {
     account := am.getAccountByTokenFromMemcached(token)
     if account != nil {
         return account, nil
@@ -331,7 +399,7 @@ func (am *accountManager) GetAccountByToken(token string) (*accountInfo, error) 
     }
 }
 
-func (am *accountManager) Create(request *Request, platform int8) (*accountInfo, error) {
+func (am *AccountManager) Create(platform int8) (*accountInfo, error) {
     var err error
     var con *database.Connection
     var retry = false
@@ -408,7 +476,7 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
 
         // アカウント登録
         if !retry {
-            userID, err = am.insertAccount(con, playerID, password, databaseNumber, platform, request.BusinessDay)
+            userID, err = am.insertAccount(con, playerID, password, databaseNumber, platform, am.request.BusinessDay)
             if err != nil {
                 log.Ee(err)
                 retry = true
@@ -417,7 +485,7 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
 
         // アカウントトークンを登録
         if !retry {
-            err = am.insertAccountToken(con, token, userID, request.BusinessDay)
+            err = am.insertAccountToken(con, token, userID, am.request.BusinessDay)
             if err != nil {
                 log.Ee(err)
                 retry = true
@@ -426,7 +494,7 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
 
         // ログを記録
         if !retry {
-            err = am.insertAccountLog(con, userID, platform, request.BusinessDay)
+            err = am.insertAccountLog(con, userID, platform, am.request.BusinessDay)
             if err != nil {
                 log.Ee(err)
                 retry = true
@@ -435,16 +503,16 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
 
         //
         if !retry {
-            con.Commit()
+            _ = con.Commit()
             con.Disconnect()
             break
         } else {
-            con.Rollback()
+            _ = con.Rollback()
             con.Disconnect()
         }
 
-        if retryCount >= createAccountMaxRetry {
-            return nil, errors.New(message.SystemMessageManager.Get("SER_ACC_102", createPlayerIdMaxRetry))
+        if retryCount >= accountCreateMaxRetry {
+            return nil, errors.New(message.SystemMessageManager.Get("SER_ACC_102", accountCreatePlayerIdMaxRetry))
         }
     }
 
@@ -467,7 +535,7 @@ func (am *accountManager) Create(request *Request, platform int8) (*accountInfo,
     return account, nil
 }
 
-func (am *accountManager) RenewPassword(token string) (*accountInfo, error) {
+func (am *AccountManager) RenewPassword(token string) (*accountInfo, error) {
     var err error
     var con *database.Connection = nil
     var account *accountInfo = nil
@@ -508,11 +576,68 @@ func (am *accountManager) RenewPassword(token string) (*accountInfo, error) {
     return account, nil
 }
 
-func GetAccountManager() (*accountManager) {
-    if accountManagerInstance == nil {
-        accountManagerInstance = &accountManager{
-            tokenCacheMutex: &sync.Mutex{},
-            tokenCache:      map[string]int64{}}
+func (am *AccountManager) Trans(playerID string, password string, platform int8) (*accountInfo, error) {
+    var err error
+    var con *database.Connection = nil
+    var account *accountInfo = nil
+
+    // 接続
+    con, err = database.Connect("goliath")
+    if err != nil {
+        return nil, err
     }
-    return accountManagerInstance
+
+    // アカウントを取得
+    account, err = am.getAccountByPlayerID(con, playerID)
+    if err != nil {
+        return nil, err
+    }
+    if account == nil {
+        am.response.SetErrorMessage("SER_RES_401")
+        return nil, nil
+    }
+
+    // パスワードチェック
+    if account.Password != password {
+        am.response.SetErrorMessage("SER_RES_401")
+        return nil, nil
+    }
+
+    // BANチェック
+    if account.IsBan {
+        am.response.SetErrorMessage("ERR_RES_121")
+    }
+
+    // 新規トークン発行
+    account.Token, err = am.generateAccountToken(con)
+
+    // トランザクション開始
+    err = con.BeginTransaction()
+    if err != nil {
+        return nil, err
+    }
+
+    // トークン更新
+    err = am.renewAccountToken(con, account.Token, account.UserID, am.request.BusinessDay)
+    if err != nil {
+        _ = con.Rollback()
+        return nil, err
+    }
+
+    // コミット
+    err = con.Commit()
+    if err != nil {
+        _ = con.Rollback()
+        return nil, err
+    }
+
+    // キャッシュに格納
+    am.cache.setTokenToCache(account.UserID, account.Token)
+
+    // 結果を返す
+    return account, nil
+}
+
+func GetAccountManager(request *Request, response *Response) *AccountManager {
+    return &AccountManager{cache: getAccountCache(), request: request, response: response}
 }

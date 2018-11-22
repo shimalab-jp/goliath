@@ -33,27 +33,27 @@ func (cvs ClientVersions) Less(i, j int) bool {
     return cvs[i].CompareTo(&cvs[j]) == -1
 }
 
-func (cv *ClientVersion) GetMajor() (uint32) {
+func (cv *ClientVersion) GetMajor() uint32 {
     return cv.major
 }
 
-func (cv *ClientVersion) GetMinor() (uint32) {
+func (cv *ClientVersion) GetMinor() uint32 {
     return cv.minor
 }
 
-func (cv *ClientVersion) GetRevision() (uint32) {
+func (cv *ClientVersion) GetRevision() uint32 {
     return cv.revision
 }
 
-func (cv *ClientVersion) GetVersion() (string) {
+func (cv *ClientVersion) GetVersion() string {
     return fmt.Sprintf("%d.%d.%d", cv.major, cv.minor, cv.revision)
 }
 
-func (cv *ClientVersion) GetEnvironmentCode() (uint32) {
+func (cv *ClientVersion) GetEnvironmentCode() uint32 {
     return util.ToEnvironmentCode(cv.environment)
 }
 
-func (cv *ClientVersion) GetPlatform() (uint32) {
+func (cv *ClientVersion) GetPlatform() uint32 {
     p := strings.ToLower(cv.platform)
     if p == "ios" || p == "iphone" || p == "ipad" || p == "tvos" || p == "watchos" || p == "apple" {
         return PlatformApple
@@ -64,11 +64,11 @@ func (cv *ClientVersion) GetPlatform() (uint32) {
     }
 }
 
-func (cv *ClientVersion) GetResourceVersion() (string) {
+func (cv *ClientVersion) GetResourceVersion() string {
     return cv.resourceVersion
 }
 
-func (cv *ClientVersion) CompareTo(target *ClientVersion) (int8) {
+func (cv *ClientVersion) CompareTo(target *ClientVersion) int8 {
     if cv.major == target.major && cv.minor == target.minor && cv.revision == target.revision {
         return 0
     }

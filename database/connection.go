@@ -28,7 +28,7 @@ type ResultSet struct {
     dataSet  []map[string]interface{}
 }
 
-func createResultSet(rows *sql.Rows) (*ResultSet) {
+func createResultSet(rows *sql.Rows) *ResultSet {
     rs := ResultSet{}
     if rows != nil {
         // カラムの一覧を取得
@@ -106,11 +106,16 @@ func createResultSet(rows *sql.Rows) (*ResultSet) {
                     v := float64(0)
                     temp = append(temp, &v)
                     break
+                case reflect.Slice:
+                    v := ""
+                    temp = append(temp, &v)
+                    break
                 case reflect.String:
                     v := ""
                     temp = append(temp, &v)
                     break
                 default:
+                    log.W("[createResultSet] Undefined kind detected : %s %d", t.Name(), t.ScanType().Kind())
                     v := ""
                     temp = append(temp, &v)
                     break
@@ -136,6 +141,102 @@ func createResultSet(rows *sql.Rows) (*ResultSet) {
     }
 
     return &rs
+}
+
+func (rs *ResultSet) toInt(v interface{}, defaultValue int) int {
+    switch t := v.(type) {
+    case int:return v.(int)
+    case int8:return int(v.(int8))
+    case int16:return int(v.(int16))
+    case int32:return int(v.(int32))
+    case int64:return int(v.(int64))
+    case uint:return int(v.(uint))
+    case uint8:return int(v.(uint8))
+    case uint16:return int(v.(uint16))
+    case uint32:return int(v.(uint32))
+    case uint64:return int(v.(uint64))
+    case float32:return int(v.(float32))
+    case float64: return int(v.(float64))
+    case *int: return int(*(v.(*int)))
+    case *int8: return int(*(v.(*int8)))
+    case *int16: return int(*(v.(*int16)))
+    case *int32: return int(*(v.(*int32)))
+    case *int64: return int(*(v.(*int64)))
+    case *uint: return int(*(v.(*uint)))
+    case *uint8: return int(*(v.(*uint8)))
+    case *uint16: return int(*(v.(*uint16)))
+    case *uint32: return int(*(v.(*uint32)))
+    case *uint64: return int(*(v.(*uint64)))
+    case *float32: return int(*(v.(*float32)))
+    case *float64: return int(*(v.(*float64)))
+    default:
+        log.W("[ResultSet] Undefined type Detected:%T", t)
+    }
+    return defaultValue
+}
+
+func (rs *ResultSet) toUint(v interface{}, defaultValue uint) uint {
+    switch t := v.(type) {
+    case int:return uint(v.(int))
+    case int8:return uint(v.(int8))
+    case int16:return uint(v.(int16))
+    case int32:return uint(v.(int32))
+    case int64:return uint(v.(int64))
+    case uint:return v.(uint)
+    case uint8:return uint(v.(uint8))
+    case uint16:return uint(v.(uint16))
+    case uint32:return uint(v.(uint32))
+    case uint64:return uint(v.(uint64))
+    case float32:return uint(v.(float32))
+    case float64: return uint(v.(float64))
+    case *int: return uint(*(v.(*int)))
+    case *int8: return uint(*(v.(*int8)))
+    case *int16: return uint(*(v.(*int16)))
+    case *int32: return uint(*(v.(*int32)))
+    case *int64: return uint(*(v.(*int64)))
+    case *uint: return uint(*(v.(*uint)))
+    case *uint8: return uint(*(v.(*uint8)))
+    case *uint16: return uint(*(v.(*uint16)))
+    case *uint32: return uint(*(v.(*uint32)))
+    case *uint64: return uint(*(v.(*uint64)))
+    case *float32: return uint(*(v.(*float32)))
+    case *float64: return uint(*(v.(*float64)))
+    default:
+        log.W("[ResultSet] Undefined type Detected:%T", t)
+    }
+    return defaultValue
+}
+
+func (rs *ResultSet) toFloat(v interface{}, defaultValue float64) float64 {
+    switch t := v.(type) {
+    case int:return float64(v.(int))
+    case int8:return float64(v.(int8))
+    case int16:return float64(v.(int16))
+    case int32:return float64(v.(int32))
+    case int64:return float64(v.(int64))
+    case uint:return float64(v.(uint))
+    case uint8:return float64(v.(uint8))
+    case uint16:return float64(v.(uint16))
+    case uint32:return float64(v.(uint32))
+    case uint64:return float64(v.(uint64))
+    case float32:return float64(v.(float32))
+    case float64: return float64(v.(float64))
+    case *int: return float64(*(v.(*int)))
+    case *int8: return float64(*(v.(*int8)))
+    case *int16: return float64(*(v.(*int16)))
+    case *int32: return float64(*(v.(*int32)))
+    case *int64: return float64(*(v.(*int64)))
+    case *uint: return float64(*(v.(*uint)))
+    case *uint8: return float64(*(v.(*uint8)))
+    case *uint16: return float64(*(v.(*uint16)))
+    case *uint32: return float64(*(v.(*uint32)))
+    case *uint64: return float64(*(v.(*uint64)))
+    case *float32: return float64(*(v.(*float32)))
+    case *float64: return *(v.(*float64))
+    default:
+        log.W("[ResultSet] Undefined type Detected:%T", t)
+    }
+    return defaultValue
 }
 
 func (rs *ResultSet) EoF() bool {
@@ -170,11 +271,28 @@ func (rs *ResultSet) getValue(name string) (interface{}, bool) {
 
 func (rs *ResultSet) GetString(name string, defaultValue string) string {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
+        switch t := v.(type) {
+        case int:
+        case int8:
+        case int16:
+        case int32:
+        case int64:
+        case uint:
+        case uint8:
+        case uint16:
+        case uint32:
+        case uint64:
+            return fmt.Sprintf("%d", v)
+        case float32:
+        case float64:
+            return fmt.Sprintf("%f", v)
         case string:
             return v.(string)
+        case *string:
+            return fmt.Sprintf("%s", *(v.(*string)))
         default:
-            return fmt.Sprintf("%x", v)
+            log.W("[ResultSet] Undefined type Detected:%T", t)
+            return fmt.Sprintf("%v", v)
         }
     }
     return defaultValue
@@ -182,264 +300,84 @@ func (rs *ResultSet) GetString(name string, defaultValue string) string {
 
 func (rs *ResultSet) GetInt(name string, defaultValue int) int {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-            return v.(int)
-        case uint:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(int)
-        }
+        return rs.toInt(v, defaultValue)
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetInt8(name string, defaultValue int8) int8 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int8:
-            return v.(int8)
-        case uint:
-        case int16:
-        case int32:
-        case int64:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(int8)
-        }
+        return int8(rs.toInt(v, int(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetInt16(name string, defaultValue int16) int16 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int16:
-            return v.(int16)
-        case uint:
-        case int8:
-        case int32:
-        case int64:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(int16)
-        }
+        return int16(rs.toInt(v, int(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetInt32(name string, defaultValue int32) int32 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int32:
-            return v.(int32)
-        case uint:
-        case int8:
-        case int16:
-        case int64:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(int32)
-        }
+        return int32(rs.toInt(v, int(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetInt64(name string, defaultValue int64) int64 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int64:
-            return v.(int64)
-        case uint:
-        case int8:
-        case int16:
-        case int32:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(int64)
-        }
+        return int64(rs.toInt(v, int(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetUInt(name string, defaultValue uint) uint {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-            return v.(uint)
-        case uint:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(uint)
-        }
+        return rs.toUint(v, defaultValue)
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetUInt8(name string, defaultValue uint8) uint8 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case uint:
-        case uint8:
-            return v.(uint8)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint16:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(uint8)
-        }
+        return uint8(rs.toUint(v, uint(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetUInt16(name string, defaultValue uint16) uint16 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case uint:
-        case uint16:
-            return v.(uint16)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint8:
-        case uint32:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(uint16)
-        }
+        return uint16(rs.toUint(v, uint(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetUInt32(name string, defaultValue uint32) uint32 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case uint:
-        case uint32:
-            return v.(uint32)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint8:
-        case uint16:
-        case uint64:
-        case float32:
-        case float64:
-            return v.(uint32)
-        }
+        return uint32(rs.toUint(v, uint(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetUInt64(name string, defaultValue uint64) uint64 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case uint:
-        case uint64:
-            return v.(uint64)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint8:
-        case uint16:
-        case uint32:
-        case float32:
-        case float64:
-            return v.(uint64)
-        }
+        return uint64(rs.toUint(v, uint(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetFloat32(name string, defaultValue float32) float32 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case float64:
-        case float32:
-            return v.(float32)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-            return v.(float32)
-        }
+        return float32(rs.toFloat(v, float64(defaultValue)))
     }
     return defaultValue
 }
 
 func (rs *ResultSet) GetFloat64(name string, defaultValue float64) float64 {
     if v, ok := rs.getValue(name); ok {
-        switch v.(type) {
-        case float32:
-        case float64:
-            return v.(float64)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-        case uint:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-            return v.(float64)
-        }
+        return rs.toFloat(v, defaultValue)
     }
     return defaultValue
 }
@@ -449,18 +387,13 @@ func (rs *ResultSet) GetBoolean(name string, defaultValue bool) bool {
         switch v.(type) {
         case bool:
             return v.(bool)
-        case int:
-        case int8:
-        case int16:
-        case int32:
-        case int64:
-            return v.(int) != 0
-        case uint:
-        case uint8:
-        case uint16:
-        case uint32:
-        case uint64:
-            return v.(uint) != 0
+        case *bool:
+            return *(v.(*bool))
+        }
+        if defaultValue {
+            return rs.toInt(v, 1) != 0
+        } else {
+            return rs.toInt(v, 0) != 0
         }
     }
     return defaultValue

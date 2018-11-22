@@ -2,10 +2,9 @@ package rest
 
 import (
     "fmt"
+    "github.com/shimalab-jp/goliath/config"
     "strconv"
     "time"
-
-    "github.com/shimalab-jp/goliath/config"
 )
 
 type businessDay struct {
@@ -36,7 +35,7 @@ type businessDay struct {
     NextMonth int32
 }
 
-func GetBusinessDay(targetTime int64) (businessDay) {
+func GetBusinessDay(targetTime int64) businessDay {
     currentTime := time.Unix(targetTime, 0)
 
     tz, _ := time.LoadLocation(config.Values.Server.TimeZone)

@@ -19,11 +19,11 @@ func (mem *Memcached) open() {
     mem.instance = memcache.New(serverList...)
 }
 
-func (mem *Memcached) createKey(key string) (string) {
+func (mem *Memcached) createKey(key string) string {
     return fmt.Sprintf("%s:%s", config.Values.Memcached.Prefix, key)
 }
 
-func (mem *Memcached) Get(key string, value interface{}) (error) {
+func (mem *Memcached) Get(key string, value interface{}) error {
     if mem.instance == nil {
         mem.open()
     }
@@ -34,14 +34,14 @@ func (mem *Memcached) Get(key string, value interface{}) (error) {
 
     item, err := mem.instance.Get(mem.createKey(key))
     if err == nil {
-        json.Unmarshal(item.Value, &value)
+        _ = json.Unmarshal(item.Value, &value)
         return nil
     } else {
         return err
     }
 }
 
-func (mem *Memcached) Set(key string, value interface{}) (error) {
+func (mem *Memcached) Set(key string, value interface{}) error {
     if mem.instance == nil {
         mem.open()
     }
@@ -62,7 +62,7 @@ func (mem *Memcached) Set(key string, value interface{}) (error) {
     return mem.instance.Set(&item)
 }
 
-func (mem *Memcached) Delete(key string) (error) {
+func (mem *Memcached) Delete(key string) error {
     if mem.instance == nil {
         mem.open()
     }
@@ -73,7 +73,7 @@ func (mem *Memcached) Delete(key string) (error) {
     return mem.instance.Delete(mem.createKey(key))
 }
 
-func (mem *Memcached) Flush() (error) {
+func (mem *Memcached) Flush() error {
     if mem.instance == nil {
         mem.open()
     }

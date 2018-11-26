@@ -6,6 +6,7 @@ goliath:
     #
     # APIサーバー
     #   port:          Listenポート
+    #   isfastcgi:     FastCGIモードで起動する場合はtrue、httpサーバーモードで起動する場合はfalse。
     #   timezone:      使用するタイムゾーンを設定します。time.LoadLocation でロード可能な文字列を指定してください
     #   userdb:        ユーザーアカウントを分散させるデータベース数を指定します。3を指定した場合は、3つのデータベースで分散させる事になります
     #   loglevel:      出力するログレベルを設定します。15:debug, 14:info, 12:warn, 8:error の何れかを指定してください。既定値は 14:info です
@@ -30,6 +31,7 @@ goliath:
     #
     server:
         port:             5050
+        isfastcgi:        true
         timezone:         "Asia/Tokyo"
         userdb:           1
         loglevel:         14

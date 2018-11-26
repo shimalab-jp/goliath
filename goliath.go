@@ -11,7 +11,9 @@ import (
     "github.com/shimalab-jp/goliath/util"
     "io/ioutil"
     "mime"
+    "net"
     "net/http"
+    "net/http/fcgi"
     "os"
     "path"
     "strings"
@@ -456,6 +458,15 @@ func Listen() error {
         http.HandleFunc(referenceUrl, referenceHandler)
     }
 
-    // httpサーバーを起動
-    return http.ListenAndServe(fmt.Sprintf(":%d", config.Values.Server.Port), nil)
+    if config.Values.Server.IsFastCGI {
+        // FastCGIモードで起動
+        listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", config.Values.Server.Port))
+        if err != nil {
+            return err
+        }
+        return fcgi.Serve(listener, nil)
+    } else {
+        // httpサーバーを起動
+        return http.ListenAndServe(fmt.Sprintf(":%d", config.Values.Server.Port), nil)
+    }
 }

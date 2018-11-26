@@ -31,6 +31,7 @@ type DebugConfig struct {
 
 type ServerConfig struct {
     Port      uint16
+    IsFastCGI bool
     TimeZone  string
     UserDB    int8
     LogLevel  uint32

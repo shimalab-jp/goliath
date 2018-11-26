@@ -19,6 +19,7 @@ goliath:
     #   reference:     APIリファレンスの設定
     #     enable:      APIリファレンスの有効化
     #     url:         APIリファレンスのURL
+    #     webroot:     WebRootパス。GOPATHで正しく動かない場合は、絶対パスを指定してみてください。
     #     environment: APIの環境。LOCAL, DEVELOP, STAGING, PRODUCTION の何れかを指定
     #     name:        APIリファレンスに表示する名前
     #     logo:        APIリファレンスに表示するロゴ
@@ -43,6 +44,7 @@ goliath:
         reference:
             enable:       true
             url:          "/reference/"
+            webroot:      "${GOPATH}/src/github.com/shimalab-jp/goliath/reference/"
             environment:  "DEVELOP"
             name:         "Goliath API Reference"
             logo:         "<a href='https://www.shimalab.io' target='_blank'><img src='https://www.shimalab.io/images/logo_color.svg' alt='SHIMALAB'></a>"

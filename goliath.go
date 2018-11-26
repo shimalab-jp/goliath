@@ -306,7 +306,14 @@ func referenceHandler(w http.ResponseWriter, r *http.Request) {
     if len(accessPath) <= 0 {
         accessPath = "index.html"
     }
-    vPath := fmt.Sprintf("${GOPATH}/src/github.com/shimalab-jp/goliath/reference/%s", accessPath)
+
+    webroot := strings.TrimRight(config.Values.Server.Reference.WebRoot, "/")
+    if !util.DirectoryExists(webroot) {
+        log.E("[Reference] Web root directory '%s' is not exists.", webroot)
+        w.WriteHeader(http.StatusForbidden)
+        return
+    }
+    vPath := fmt.Sprintf("%s/%s", webroot, accessPath)
     realPath := os.ExpandEnv(vPath)
 
     if accessPath == "config.json" {

@@ -17,6 +17,7 @@ type VersionConfig struct {
 type ReferenceConfig struct {
     Enable      bool
     Url         string
+    WebRoot     string
     Environment string
     Name        string
     Logo        string

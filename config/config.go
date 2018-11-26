@@ -3,6 +3,7 @@ package config
 import (
     "fmt"
     "github.com/pkg/errors"
+    "github.com/shimalab-jp/goliath/util"
     "gopkg.in/yaml.v2"
     "io/ioutil"
     "os"
@@ -108,7 +109,13 @@ var root *configRoot = nil
 var Values *GoliathConfig = nil
 
 func Load(configPath string) error {
-    buf, err := ioutil.ReadFile(os.ExpandEnv(configPath))
+    path := os.ExpandEnv(configPath)
+
+    if !util.FileExists(path) {
+        return errors.New(fmt.Sprintf("Configuration file '%s' is not exists.", path))
+    }
+
+    buf, err := ioutil.ReadFile(path)
     if err != nil {
         return errors.WithStack(err)
     }

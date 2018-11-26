@@ -31,7 +31,6 @@ type AccountOutputInfo struct {
     Token    string
 }
 
-
 /********************
  *** Account Info ***
  ********************/
@@ -53,7 +52,6 @@ func (am *accountInfo) Output() AccountOutputInfo {
         Platform: am.Platform,
         Token:    am.Token}
 }
-
 
 /*********************
  *** Account Cache ***
@@ -89,13 +87,12 @@ var cacheInstance *accountCache
 
 func getAccountCache() *accountCache {
     if cacheInstance == nil {
-        cacheInstance =         &accountCache{
-            tokenCacheMutex:    &sync.Mutex{},
-            tokenCache:         map[string]int64{}}
+        cacheInstance = &accountCache{
+            tokenCacheMutex: &sync.Mutex{},
+            tokenCache:      map[string]int64{}}
     }
     return cacheInstance
 }
-
 
 /***********************
  *** Account Manager ***
@@ -262,7 +259,7 @@ func (am *AccountManager) renewAccountToken(con *database.Connection, token stri
 
     {
         var sql = "INSERT INTO `goliath_dat_account_token` (`token`, `user_id`, `is_valid`, `regist_month`) VALUES (?, ?, 1, ?);"
-        _, err := con.Execute(sql, token, userID, businessDay.Year*100 + businessDay.Month)
+        _, err := con.Execute(sql, token, userID, businessDay.Year*100+businessDay.Month)
         if err != nil {
             return err
         }

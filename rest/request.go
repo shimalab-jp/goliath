@@ -170,7 +170,6 @@ func (request *Request) GetParamBoolean(pType ParameterType, name string, defaul
     return defaultValue, false
 }
 
-
 func (request *Request) GetUrlParamString(index int, defaultValue string) (string, bool) {
     if len(request.UrlData) > index {
         return request.UrlData[index], true

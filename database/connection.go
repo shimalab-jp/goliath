@@ -145,30 +145,54 @@ func createResultSet(rows *sql.Rows) *ResultSet {
 
 func (rs *ResultSet) toInt(v interface{}, defaultValue int) int {
     switch t := v.(type) {
-    case int:return v.(int)
-    case int8:return int(v.(int8))
-    case int16:return int(v.(int16))
-    case int32:return int(v.(int32))
-    case int64:return int(v.(int64))
-    case uint:return int(v.(uint))
-    case uint8:return int(v.(uint8))
-    case uint16:return int(v.(uint16))
-    case uint32:return int(v.(uint32))
-    case uint64:return int(v.(uint64))
-    case float32:return int(v.(float32))
-    case float64: return int(v.(float64))
-    case *int: return int(*(v.(*int)))
-    case *int8: return int(*(v.(*int8)))
-    case *int16: return int(*(v.(*int16)))
-    case *int32: return int(*(v.(*int32)))
-    case *int64: return int(*(v.(*int64)))
-    case *uint: return int(*(v.(*uint)))
-    case *uint8: return int(*(v.(*uint8)))
-    case *uint16: return int(*(v.(*uint16)))
-    case *uint32: return int(*(v.(*uint32)))
-    case *uint64: return int(*(v.(*uint64)))
-    case *float32: return int(*(v.(*float32)))
-    case *float64: return int(*(v.(*float64)))
+    case int:
+        return v.(int)
+    case int8:
+        return int(v.(int8))
+    case int16:
+        return int(v.(int16))
+    case int32:
+        return int(v.(int32))
+    case int64:
+        return int(v.(int64))
+    case uint:
+        return int(v.(uint))
+    case uint8:
+        return int(v.(uint8))
+    case uint16:
+        return int(v.(uint16))
+    case uint32:
+        return int(v.(uint32))
+    case uint64:
+        return int(v.(uint64))
+    case float32:
+        return int(v.(float32))
+    case float64:
+        return int(v.(float64))
+    case *int:
+        return int(*(v.(*int)))
+    case *int8:
+        return int(*(v.(*int8)))
+    case *int16:
+        return int(*(v.(*int16)))
+    case *int32:
+        return int(*(v.(*int32)))
+    case *int64:
+        return int(*(v.(*int64)))
+    case *uint:
+        return int(*(v.(*uint)))
+    case *uint8:
+        return int(*(v.(*uint8)))
+    case *uint16:
+        return int(*(v.(*uint16)))
+    case *uint32:
+        return int(*(v.(*uint32)))
+    case *uint64:
+        return int(*(v.(*uint64)))
+    case *float32:
+        return int(*(v.(*float32)))
+    case *float64:
+        return int(*(v.(*float64)))
     default:
         log.W("[ResultSet] Undefined type Detected:%T", t)
     }
@@ -177,30 +201,54 @@ func (rs *ResultSet) toInt(v interface{}, defaultValue int) int {
 
 func (rs *ResultSet) toUint(v interface{}, defaultValue uint) uint {
     switch t := v.(type) {
-    case int:return uint(v.(int))
-    case int8:return uint(v.(int8))
-    case int16:return uint(v.(int16))
-    case int32:return uint(v.(int32))
-    case int64:return uint(v.(int64))
-    case uint:return v.(uint)
-    case uint8:return uint(v.(uint8))
-    case uint16:return uint(v.(uint16))
-    case uint32:return uint(v.(uint32))
-    case uint64:return uint(v.(uint64))
-    case float32:return uint(v.(float32))
-    case float64: return uint(v.(float64))
-    case *int: return uint(*(v.(*int)))
-    case *int8: return uint(*(v.(*int8)))
-    case *int16: return uint(*(v.(*int16)))
-    case *int32: return uint(*(v.(*int32)))
-    case *int64: return uint(*(v.(*int64)))
-    case *uint: return uint(*(v.(*uint)))
-    case *uint8: return uint(*(v.(*uint8)))
-    case *uint16: return uint(*(v.(*uint16)))
-    case *uint32: return uint(*(v.(*uint32)))
-    case *uint64: return uint(*(v.(*uint64)))
-    case *float32: return uint(*(v.(*float32)))
-    case *float64: return uint(*(v.(*float64)))
+    case int:
+        return uint(v.(int))
+    case int8:
+        return uint(v.(int8))
+    case int16:
+        return uint(v.(int16))
+    case int32:
+        return uint(v.(int32))
+    case int64:
+        return uint(v.(int64))
+    case uint:
+        return v.(uint)
+    case uint8:
+        return uint(v.(uint8))
+    case uint16:
+        return uint(v.(uint16))
+    case uint32:
+        return uint(v.(uint32))
+    case uint64:
+        return uint(v.(uint64))
+    case float32:
+        return uint(v.(float32))
+    case float64:
+        return uint(v.(float64))
+    case *int:
+        return uint(*(v.(*int)))
+    case *int8:
+        return uint(*(v.(*int8)))
+    case *int16:
+        return uint(*(v.(*int16)))
+    case *int32:
+        return uint(*(v.(*int32)))
+    case *int64:
+        return uint(*(v.(*int64)))
+    case *uint:
+        return uint(*(v.(*uint)))
+    case *uint8:
+        return uint(*(v.(*uint8)))
+    case *uint16:
+        return uint(*(v.(*uint16)))
+    case *uint32:
+        return uint(*(v.(*uint32)))
+    case *uint64:
+        return uint(*(v.(*uint64)))
+    case *float32:
+        return uint(*(v.(*float32)))
+    case *float64:
+        return uint(*(v.(*float64)))
     default:
         log.W("[ResultSet] Undefined type Detected:%T", t)
     }
@@ -209,30 +257,54 @@ func (rs *ResultSet) toUint(v interface{}, defaultValue uint) uint {
 
 func (rs *ResultSet) toFloat(v interface{}, defaultValue float64) float64 {
     switch t := v.(type) {
-    case int:return float64(v.(int))
-    case int8:return float64(v.(int8))
-    case int16:return float64(v.(int16))
-    case int32:return float64(v.(int32))
-    case int64:return float64(v.(int64))
-    case uint:return float64(v.(uint))
-    case uint8:return float64(v.(uint8))
-    case uint16:return float64(v.(uint16))
-    case uint32:return float64(v.(uint32))
-    case uint64:return float64(v.(uint64))
-    case float32:return float64(v.(float32))
-    case float64: return float64(v.(float64))
-    case *int: return float64(*(v.(*int)))
-    case *int8: return float64(*(v.(*int8)))
-    case *int16: return float64(*(v.(*int16)))
-    case *int32: return float64(*(v.(*int32)))
-    case *int64: return float64(*(v.(*int64)))
-    case *uint: return float64(*(v.(*uint)))
-    case *uint8: return float64(*(v.(*uint8)))
-    case *uint16: return float64(*(v.(*uint16)))
-    case *uint32: return float64(*(v.(*uint32)))
-    case *uint64: return float64(*(v.(*uint64)))
-    case *float32: return float64(*(v.(*float32)))
-    case *float64: return *(v.(*float64))
+    case int:
+        return float64(v.(int))
+    case int8:
+        return float64(v.(int8))
+    case int16:
+        return float64(v.(int16))
+    case int32:
+        return float64(v.(int32))
+    case int64:
+        return float64(v.(int64))
+    case uint:
+        return float64(v.(uint))
+    case uint8:
+        return float64(v.(uint8))
+    case uint16:
+        return float64(v.(uint16))
+    case uint32:
+        return float64(v.(uint32))
+    case uint64:
+        return float64(v.(uint64))
+    case float32:
+        return float64(v.(float32))
+    case float64:
+        return float64(v.(float64))
+    case *int:
+        return float64(*(v.(*int)))
+    case *int8:
+        return float64(*(v.(*int8)))
+    case *int16:
+        return float64(*(v.(*int16)))
+    case *int32:
+        return float64(*(v.(*int32)))
+    case *int64:
+        return float64(*(v.(*int64)))
+    case *uint:
+        return float64(*(v.(*uint)))
+    case *uint8:
+        return float64(*(v.(*uint8)))
+    case *uint16:
+        return float64(*(v.(*uint16)))
+    case *uint32:
+        return float64(*(v.(*uint32)))
+    case *uint64:
+        return float64(*(v.(*uint64)))
+    case *float32:
+        return float64(*(v.(*float32)))
+    case *float64:
+        return *(v.(*float64))
     default:
         log.W("[ResultSet] Undefined type Detected:%T", t)
     }
@@ -249,7 +321,7 @@ func (rs *ResultSet) MoveFirst() bool {
 }
 
 func (rs *ResultSet) MoveNext() bool {
-    if rs.rowIndex < len(rs.dataSet) - 1 {
+    if rs.rowIndex < len(rs.dataSet)-1 {
         rs.rowIndex++
         return true
     } else {

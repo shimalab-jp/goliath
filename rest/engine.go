@@ -84,14 +84,14 @@ func (e *Engine) parseRequest(httpRequest *http.Request) (*Request, error) {
 
     // 戻り値のインスタンスを作成
     returnValue := &Request{
-        Languages:    []message.AcceptLanguage{},
-        Headers:      map[string]string{},
-        UrlData:      []string{},
-        QueryData:    map[string]string{},
-        PostData:     map[string]interface{}{},
-        Resource:     nil,
-        MethodInfo:   nil,
-        Account:      nil}
+        Languages:  []message.AcceptLanguage{},
+        Headers:    map[string]string{},
+        UrlData:    []string{},
+        QueryData:  map[string]string{},
+        PostData:   map[string]interface{}{},
+        Resource:   nil,
+        MethodInfo: nil,
+        Account:    nil}
 
     // バージョン判定
     for _, v := range config.Values.Server.Versions {

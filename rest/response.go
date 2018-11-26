@@ -57,17 +57,17 @@ type OutputData struct {
 
 func (response *Response) CreateOutputData() *OutputData {
     return &OutputData{
-        Method: response.Method,
-        ApiName: response.Name,
-        ResultCode: response.ResultCode,
-        Result: response.Result,
-        ErrorCode: response.ErrorCode,
-        ErrorMessage: response.ErrorMessage,
-        DebugMessage: response.DebugMessage,
+        Method:          response.Method,
+        ApiName:         response.Name,
+        ResultCode:      response.ResultCode,
+        Result:          response.Result,
+        ErrorCode:       response.ErrorCode,
+        ErrorMessage:    response.ErrorMessage,
+        DebugMessage:    response.DebugMessage,
         ResourceVersion: response.ResourceVersion,
-        LinkUrl:response.LinkUrl,
-        ProcessTime: response.ProcessTime,
-        ServerTime: time.Now().UnixNano(),
+        LinkUrl:         response.LinkUrl,
+        ProcessTime:     response.ProcessTime,
+        ServerTime:      time.Now().UnixNano(),
         MaintenanceInfo: response.MaintenanceInfo}
 }
 
@@ -96,4 +96,3 @@ func (outputData *OutputData) ToJson() *[]byte {
     }
     return &jsonData
 }
-
